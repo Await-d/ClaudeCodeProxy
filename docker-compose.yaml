@@ -4,7 +4,7 @@ services:
   # 主应用服务
   claude-code-proxy:
     container_name: claude-code-proxy
-    image: crpi-j9ha7sxwhatgtvj4.cn-shenzhen.personal.cr.aliyuncs.com/koala-ai/claude-code-proxy
+    image: crpi-0t50b9e7uk19r5o7.cn-shanghai.personal.cr.aliyuncs.com/await29/claudecodeproxy/koala-ai/claude-code-proxy
     ports:
       - "8080:8080"    # HTTP端口
     environment:
