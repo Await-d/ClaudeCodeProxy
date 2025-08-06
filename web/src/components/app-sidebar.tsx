@@ -11,6 +11,7 @@ import {
   Github,
   ExternalLink,
   DollarSign,
+  Layers,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -38,6 +39,11 @@ const navMain = [
     title: "API Key管理",
     url: "/apikeys",
     icon: Key,
+  },
+  {
+    title: "API Key分组",
+    url: "/api-key-groups",
+    icon: Layers,
   },
   {
     title: "账号管理",

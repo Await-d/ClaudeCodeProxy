@@ -7,6 +7,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 import LoginPage from '@/pages/login';
 import DashboardPage from '@/pages/dashboard';
 import ApiKeysPage from '@/pages/apikeys';
+import ApiKeyGroupsPage from '@/pages/api-key-groups';
 import AccountsPage from '@/pages/accounts';
 import PricingPage from '@/pages/pricing';
 import SettingsPage from '@/pages/settings';
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'apikeys', element: <ApiKeysPage /> },
+      { path: 'api-key-groups', element: <ApiKeyGroupsPage /> },
       { path: 'accounts', element: <AccountsPage /> },
       { path: 'pricing', element: <PricingPage /> },
       { path: 'request-logs', element: <RequestLogsPage /> },

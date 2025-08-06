@@ -65,7 +65,7 @@ export default function OAuthFlow({ platform, proxy, onSuccess, onBack }: OAuthF
           } else {
             showToast('URL 中未找到授权码参数，请检查链接是否正确', 'error');
           }
-        } catch (error) {
+        } catch {
           showToast('链接格式错误，请检查是否为完整的 URL', 'error');
         }
       } else if (platform === 'gemini') {
@@ -77,7 +77,7 @@ export default function OAuthFlow({ platform, proxy, onSuccess, onBack }: OAuthF
             setAuthCode(code);
             showToast('成功提取授权码！', 'success');
           }
-        } catch (error) {
+        } catch {
           // 不是有效的URL，保持原值
         }
       } else if (platform === 'thor') {
@@ -91,7 +91,7 @@ export default function OAuthFlow({ platform, proxy, onSuccess, onBack }: OAuthF
           } else {
             showToast('URL 中未找到token参数，请检查链接是否正确', 'error');
           }
-        } catch (error) {
+        } catch {
           showToast('链接格式错误，请检查是否为完整的 URL', 'error');
         }
       } else {
@@ -123,8 +123,9 @@ export default function OAuthFlow({ platform, proxy, onSuccess, onBack }: OAuthF
         setAuthUrl(result.authUrl);
         setSessionId(result.sessionId);
       }
-    } catch (error: any) {
-      showToast(error.message || '生成授权链接失败', 'error');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '生成授权链接失败';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -160,18 +161,12 @@ export default function OAuthFlow({ platform, proxy, onSuccess, onBack }: OAuthF
     
     setExchanging(true);
     try {
-      let data: any = {};
+      let data: { sessionId: string; callbackUrl?: string; code?: string; proxy?: ProxyConfig } = { sessionId };
       
       if (platform === 'claude') {
-        data = {
-          sessionId: sessionId,
-          callbackUrl: authCode.trim()
-        };
+        data.callbackUrl = authCode.trim();
       } else if (platform === 'gemini') {
-        data = {
-          code: authCode.trim(),
-          sessionId: sessionId
-        };
+        data.code = authCode.trim();
       } else if (platform === 'thor') {
         // Thor平台直接使用token
         const tokenInfo = {
@@ -197,8 +192,9 @@ export default function OAuthFlow({ platform, proxy, onSuccess, onBack }: OAuthF
       if (tokenInfo) {
         onSuccess(tokenInfo);
       }
-    } catch (error: any) {
-      showToast(error.message || '授权失败，请检查授权码是否正确', 'error');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '授权失败，请检查授权码是否正确';
+      showToast(errorMessage, 'error');
     } finally {
       setExchanging(false);
     }

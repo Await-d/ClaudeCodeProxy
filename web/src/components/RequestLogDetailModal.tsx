@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Clock, 
   User, 
@@ -25,13 +25,7 @@ export default function RequestLogDetailModal({ logId, onClose }: RequestLogDeta
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (logId) {
-      fetchLogDetail();
-    }
-  }, [logId]);
-
-  const fetchLogDetail = async () => {
+  const fetchLogDetail = useCallback(async () => {
     if (!logId) return;
     
     try {
@@ -77,7 +71,13 @@ export default function RequestLogDetailModal({ logId, onClose }: RequestLogDeta
     } finally {
       setLoading(false);
     }
-  };
+  }, [logId]);
+
+  useEffect(() => {
+    if (logId) {
+      fetchLogDetail();
+    }
+  }, [logId, fetchLogDetail]);
 
   const formatTime = (timestamp: string): string => {
     return new Date(timestamp).toLocaleString('zh-CN', {

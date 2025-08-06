@@ -100,15 +100,16 @@ export default function UserProfileRadar({ className }: UserProfileRadarProps) {
 
             // 基于真实数据计算各项指标的相对得分
             switch (metric.metric) {
-              case '请求频率':
+              case '请求频率': {
                 // 基于该API Key的请求数相对于平均值的比例
                 const avgRequests = realtimeData.stats.totalRequests / Math.max(1, availableApiKeys.length);
                 const apiKeyRequests = realtimeData.recentRequests
                   .filter(req => req.apiKeyName === apiKeyName).length;
                 value = Math.min(100, (apiKeyRequests / Math.max(1, avgRequests)) * 50);
                 break;
+              }
 
-              case 'Token使用量':
+              case 'Token使用量': {
                 // 基于Token使用量
                 const totalTokens = realtimeData.recentRequests
                   .filter(req => req.apiKeyName === apiKeyName)
@@ -116,27 +117,31 @@ export default function UserProfileRadar({ className }: UserProfileRadarProps) {
                 const avgTokens = realtimeData.stats.totalTokens / Math.max(1, availableApiKeys.length);
                 value = Math.min(100, (totalTokens / Math.max(1, avgTokens)) * 50);
                 break;
+              }
 
-              case '费用支出':
+              case '费用支出': {
                 // 基于费用支出
                 const totalCost = realtimeData.recentRequests
                   .filter(req => req.apiKeyName === apiKeyName)
                   .reduce((sum, req) => sum + req.cost, 0);
                 value = Math.min(100, totalCost * 1000); // 按比例缩放
                 break;
+              }
 
-              case '响应时间':
+              case '响应时间': {
                 // 基于平均响应时间（越低越好，所以取反）
                 const avgResponseTime = realtimeData.stats.averageResponseTimeMs;
                 value = Math.max(0, 100 - (avgResponseTime / 10));
                 break;
+              }
 
-              case '成功率':
+              case '成功率': {
                 // 基于成功率
                 value = realtimeData.stats.successRate;
                 break;
+              }
 
-              case '模型多样性':
+              case '模型多样性': {
                 // 基于使用的不同模型数量
                 const uniqueModels = new Set(
                   realtimeData.recentRequests
@@ -145,6 +150,7 @@ export default function UserProfileRadar({ className }: UserProfileRadarProps) {
                 ).size;
                 value = Math.min(100, uniqueModels * 25); // 每个模型25分
                 break;
+              }
 
               default:
                 value = Math.random() * 100;

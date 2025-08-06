@@ -191,7 +191,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
     }
   }, [form.platform]);
 
-  const updateForm = (field: string, value: any) => {
+  const updateForm = (field: string, value: string | number | boolean | Record<string, unknown>) => {
     setForm(prev => ({ ...prev, [field]: value }));
     
     // 清除对应的错误
@@ -215,7 +215,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
       if (!form.projectId?.trim()) {
         const confirmed = await showConfirm(
           '项目编号未填写',
-          '您尚未填写项目编号。\n\n如果您的Google账号绑定了Google Cloud或被识别为Workspace账号，需要提供项目编号。\n如果您使用的是普通个人账号，可以继续不填写。',
+          '您尚未填写项目编号。如果您的Google账号绑定了Google Cloud或被识别为Workspace账号，需要提供项目编号。如果您使用的是普通个人账号，可以继续不填写。',
           '继续',
           '返回填写'
         );
@@ -235,12 +235,13 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
         description: form.description,
         accountType: form.accountType,
         proxy: form.proxy.enabled ? {
+          enabled: true,
           type: form.proxy.type,
           host: form.proxy.host,
-          port: parseInt(form.proxy.port),
-          username: form.proxy.username || null,
-          password: form.proxy.password || null
-        } : null
+          port: form.proxy.port,
+          username: form.proxy.username || undefined,
+          password: form.proxy.password || undefined
+        } : undefined
       };
 
       if (form.platform === 'claude') {
@@ -273,8 +274,9 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
       }
 
       onSuccess(result);
-    } catch (error: any) {
-      showToast(error.message || '账户创建失败', 'error');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '账户创建失败';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -322,12 +324,13 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
         description: form.description,
         accountType: form.accountType,
         proxy: form.proxy.enabled ? {
+          enabled: true,
           type: form.proxy.type,
           host: form.proxy.host,
-          port: parseInt(form.proxy.port),
-          username: form.proxy.username || null,
-          password: form.proxy.password || null
-        } : null
+          port: form.proxy.port,
+          username: form.proxy.username || undefined,
+          password: form.proxy.password || undefined
+        } : undefined
       };
 
       if (form.platform === 'claude') {
@@ -361,7 +364,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
           apiKey: form.apiKey,
           priority: form.priority || 50,
           supportedModels: convertMappingsToObject() || {},
-          userAgent: form.userAgent || null,
+          userAgent: form.userAgent || undefined,
           rateLimitDuration: form.rateLimitDuration || 60
         });
       } else if (form.platform === 'openai') {
@@ -370,7 +373,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
           apiKey: form.apiKey,
           priority: form.priority || 50,
           supportedModels: convertMappingsToObject() || {},
-          userAgent: form.userAgent || null,
+          userAgent: form.userAgent || undefined,
           rateLimitDuration: form.rateLimitDuration || 60
         });
       }
@@ -389,8 +392,9 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
       }
 
       onSuccess(result);
-    } catch (error: any) {
-      showToast(error.message || '账户创建失败', 'error');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '账户创建失败';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -406,7 +410,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
     if (form.platform === 'gemini' && !form.projectId?.trim()) {
       const confirmed = await showConfirm(
         '项目编号未填写',
-        '您尚未填写项目编号。\n\n如果您的Google账号绑定了Google Cloud或被识别为Workspace账号，需要提供项目编号。\n如果您使用的是普通个人账号，可以继续保存。',
+        "您尚未填写项目编号。如果您的Google账号绑定了Google Cloud或被识别为Workspace账号，需要提供项目编号。如果您使用的是普通个人账号，可以继续保存。",
         '继续保存',
         '返回填写'
       );
@@ -421,12 +425,13 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
       description: form.description,
       accountType: form.accountType,
       proxy: form.proxy.enabled ? {
-        type: form.proxy.type,
-        host: form.proxy.host,
-        port: parseInt(form.proxy.port),
-        username: form.proxy.username || null,
-        password: form.proxy.password || null
-      } : null
+          enabled: true,
+          type: form.proxy.type,
+          host: form.proxy.host,
+          port: form.proxy.port,
+          username: form.proxy.username || undefined,
+          password: form.proxy.password || undefined
+        } : undefined
     };
 
       // 只有非空时才更新token
@@ -468,7 +473,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
           apiUrl: form.apiUrl,
           priority: form.priority || 50,
           supportedModels: convertMappingsToObject() || {},
-          userAgent: form.userAgent || null,
+          userAgent: form.userAgent || undefined,
           rateLimitDuration: form.rateLimitDuration || 60
         });
         if (form.apiKey) {
@@ -481,7 +486,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
           apiUrl: form.apiUrl || 'https://api.openai.com/v1',
           priority: form.priority || 50,
           supportedModels: convertMappingsToObject() || {},
-          userAgent: form.userAgent || null,
+          userAgent: form.userAgent || undefined,
           rateLimitDuration: form.rateLimitDuration || 60
         });
         if (form.apiKey) {
@@ -494,7 +499,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
           apiUrl: form.apiUrl || 'https://api.token-ai.cn/v1',
           priority: form.priority || 50,
           supportedModels: convertMappingsToObject() || {},
-          userAgent: form.userAgent || null,
+          userAgent: form.userAgent || undefined,
           rateLimitDuration: form.rateLimitDuration || 60
         });
         if (form.apiKey) {
@@ -515,8 +520,9 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
       }
 
       onSuccess();
-    } catch (error: any) {
-      showToast(error.message || '账户更新失败', 'error');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '账户更新失败';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -698,7 +704,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
                         onChange={(e) => updateForm('addType', e.target.value)}
                         className="mr-2"
                       />
-                      <span className="text-sm text-foreground">{(form.platform as any) === 'thor' ? 'Token 快捷获取 (推荐)' : 'OAuth 授权 (推荐)'}</span>
+                      <span className="text-sm text-foreground">{form.platform === 'thor' ? 'Token 快捷获取 (推荐)' : 'OAuth 授权 (推荐)'}</span>
                     </label>
                     <label className="flex items-center cursor-pointer">
                       <input 

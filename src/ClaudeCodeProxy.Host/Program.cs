@@ -338,6 +338,6 @@ public static class Program
             .WithTags("System");
 
         // SPA fallback - 所有非API请求都返回index.html
-        app.MapFallbackToFile("index.html");
+        app.MapFallbackToFile("index.html").ExcludeFromDescription();
     }
 }

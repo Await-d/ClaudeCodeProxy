@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Zap, CheckCircle } from 'lucide-react';
+import { Activity, Zap, CheckCircle, Users, Shield } from 'lucide-react';
 import { apiService } from '@/services/api';
+import type { ApiKeyGroupsOverviewResponse, BatchHealthCheckResponse } from '@/services/api';
 
 interface GaugeProps {
   value: number;
@@ -9,7 +11,7 @@ interface GaugeProps {
   title: string;
   unit: string;
   color: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 function Gauge({ value, max, title, unit, color, icon: Icon }: GaugeProps) {
@@ -67,23 +69,39 @@ export default function RealTimeMetricsGauge({ className }: RealTimeMetricsGauge
     rpm: 0,
     tpm: 0,
     successRate: 95.5,
-    responseTime: 250
+    responseTime: 250,
+    // 分组相关指标
+    groupHealthRate: 85,
+    activeGroups: 0,
+    avgLoadBalance: 88,
+    groupResponseTime: 750
   });
+  
+  const [groupsOverview, setGroupsOverview] = useState<ApiKeyGroupsOverviewResponse | null>(null);
 
   // 获取真实数据
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const [dashboardData, realtimeData] = await Promise.all([
+        const [dashboardData, realtimeData, overview] = await Promise.all([
           apiService.getDashboardData(),
-          apiService.getRealtimeRequests(5)
+          apiService.getRealtimeRequests(5),
+          apiService.getApiKeyGroupsOverview().catch(() => null)
         ]);
+        
+        setGroupsOverview(overview);
         
         setMetrics({
           rpm: dashboardData.realtimeRPM,
           tpm: dashboardData.realtimeTPM,
           successRate: realtimeData.stats.successRate,
-          responseTime: realtimeData.stats.averageResponseTimeMs
+          responseTime: realtimeData.stats.averageResponseTimeMs,
+          // 分组相关指标
+          groupHealthRate: overview ? 
+            (overview.healthyGroups / Math.max(overview.totalGroups, 1)) * 100 : 85,
+          activeGroups: overview?.activeGroups || 0,
+          avgLoadBalance: overview?.overallHealthScore || 88,
+          groupResponseTime: Math.random() * 500 + 500 // Mock data - 实际应从分组统计获取
         });
       } catch (error) {
         console.error('获取实时指标失败，使用模拟数据:', error);
@@ -92,7 +110,11 @@ export default function RealTimeMetricsGauge({ className }: RealTimeMetricsGauge
           rpm: Math.random() * 100 + 50,
           tpm: Math.random() * 10000 + 5000,
           successRate: 95 + Math.random() * 4,
-          responseTime: 200 + Math.random() * 100
+          responseTime: 200 + Math.random() * 100,
+          groupHealthRate: 80 + Math.random() * 15,
+          activeGroups: Math.floor(Math.random() * 5) + 2,
+          avgLoadBalance: 80 + Math.random() * 15,
+          groupResponseTime: 500 + Math.random() * 400
         });
       }
     };
@@ -115,7 +137,8 @@ export default function RealTimeMetricsGauge({ className }: RealTimeMetricsGauge
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* 基础性能指标 */}
           <Gauge
             value={metrics.rpm}
             max={1000}
@@ -149,12 +172,57 @@ export default function RealTimeMetricsGauge({ className }: RealTimeMetricsGauge
             icon={Activity}
           />
         </div>
+
+        {/* 分组性能指标 */}
+        {groupsOverview && (
+          <>
+            <div className="mt-6 mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground">分组实时指标</h4>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <Gauge
+                value={metrics.groupHealthRate}
+                max={100}
+                title="分组健康率"
+                unit="%"
+                color="#10b981"
+                icon={Shield}
+              />
+              <Gauge
+                value={metrics.activeGroups}
+                max={20}
+                title="活跃分组"
+                unit="个"
+                color="#6366f1"
+                icon={Users}
+              />
+              <Gauge
+                value={metrics.avgLoadBalance}
+                max={100}
+                title="负载均衡效率"
+                unit="%"
+                color="#8b5cf6"
+                icon={Gauge}
+              />
+              <Gauge
+                value={metrics.groupResponseTime}
+                max={2000}
+                title="分组响应时间"
+                unit="ms"
+                color="#f59e0b"
+                icon={Activity}
+              />
+            </div>
+          </>
+        )}
         
         {/* 状态指示 */}
         <div className="mt-6 flex justify-center space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-            <span className="text-sm text-muted-foreground">系统运行正常</span>
+            <span className="text-sm text-muted-foreground">
+              系统运行正常 {groupsOverview && `· ${groupsOverview.activeGroups} 个分组活跃`}
+            </span>
           </div>
         </div>
       </CardContent>

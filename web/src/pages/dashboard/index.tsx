@@ -12,7 +12,10 @@ import {
   Zap,
   AlertCircle,
   CheckCircle,
-  Server
+  Server,
+  Layers,
+  Shield,
+  Gauge
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -26,8 +29,16 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { apiService } from '@/services/api';
-import type { DashboardResponse, CostDataResponse, UptimeResponse, TrendDataPoint } from '@/services/api';
+import type { 
+  DashboardResponse, 
+  CostDataResponse, 
+  UptimeResponse, 
+  TrendDataPoint, 
+  ApiKeyGroupsOverviewResponse,
+  BatchHealthCheckResponse 
+} from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import GroupPerformanceChart from '@/components/charts/GroupPerformanceChart';
 
 export default function DashboardPage() {
   const { actualTheme } = useTheme();
@@ -38,6 +49,10 @@ export default function DashboardPage() {
   const [trendError, setTrendError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // API Key Groups 相关状态
+  const [groupsOverview, setGroupsOverview] = useState<ApiKeyGroupsOverviewResponse | null>(null);
+  const [batchHealthCheck, setBatchHealthCheck] = useState<BatchHealthCheckResponse | null>(null);
 
   // 主题感知的图表颜色
   const chartColors = {
@@ -82,6 +97,18 @@ export default function DashboardPage() {
         setDashboardData(dashboard);
         setCostData(costs);
         setUptimeData(uptime);
+
+        // 获取分组相关数据
+        try {
+          const [overview, healthCheck] = await Promise.all([
+            apiService.getApiKeyGroupsOverview().catch(() => null),
+            apiService.batchGroupHealthCheck().catch(() => null)
+          ]);
+          setGroupsOverview(overview);
+          setBatchHealthCheck(healthCheck);
+        } catch (groupErr) {
+          console.error('Failed to fetch groups data:', groupErr);
+        }
 
         // 单独尝试获取趋势数据
         try {
@@ -279,6 +306,48 @@ export default function DashboardPage() {
     },
   ];
 
+  // 分组统计指标
+  const groupStats = [
+    {
+      title: '总分组数量',
+      value: groupsOverview?.totalGroups || 0,
+      subtitle: `${groupsOverview?.activeGroups || 0} 个已启用`,
+      icon: Layers,
+      color: 'text-primary',
+      bgColor: 'bg-muted',
+      trend: (groupsOverview?.activeGroups || 0) > 0 ? '正常' : '无活跃',
+    },
+    {
+      title: '活跃分组数量',
+      value: groupsOverview?.activeGroups || 0,
+      subtitle: `${groupsOverview?.inactiveGroups || 0} 个已停用`,
+      icon: Activity,
+      color: 'text-primary',
+      bgColor: 'bg-muted',
+      trend: (groupsOverview?.activeGroups || 0) > 0 ? '正常' : '无活跃',
+    },
+    {
+      title: '健康分组比率',
+      value: groupsOverview && groupsOverview.totalGroups > 0 
+        ? `${((groupsOverview.healthyGroups / groupsOverview.totalGroups) * 100).toFixed(1)}%`
+        : '0%',
+      subtitle: `${groupsOverview?.healthyGroups || 0} / ${groupsOverview?.totalGroups || 0} 健康`,
+      icon: Shield,
+      color: 'text-primary',
+      bgColor: 'bg-muted',
+      trend: (groupsOverview?.healthyGroups || 0) > (groupsOverview?.unhealthyGroups || 0) ? '良好' : '需关注',
+    },
+    {
+      title: '平均负载均衡效率',
+      value: groupsOverview?.overallHealthScore ? `${groupsOverview.overallHealthScore}%` : '85%',
+      subtitle: `${groupsOverview?.averageKeysPerGroup?.toFixed(1) || '0'} 平均Key数/组`,
+      icon: Gauge,
+      color: 'text-primary',
+      bgColor: 'bg-muted',
+      trend: (groupsOverview?.overallHealthScore || 85) > 80 ? '优秀' : '待优化',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -390,6 +459,43 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* API Key 分组统计 */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">API Key 分组统计</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {groupStats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={index} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                    <Icon className={`h-4 w-4 ${stat.color}`} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stat.subtitle}
+                  </p>
+                  <div className="flex items-center mt-2">
+                    <div className={`px-2 py-1 rounded-full text-xs ${
+                      stat.trend === '正常' || stat.trend === '良好' || stat.trend === '优秀'
+                        ? 'bg-accent text-accent-foreground' 
+                        : 'bg-secondary text-secondary-foreground'
+                    }`}>
+                      {stat.trend}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 高级图表展示 */}
       <div className="space-y-6">
         {/* 快速链接到高级分析 */}
@@ -413,6 +519,9 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* 分组性能图表 */}
+        <GroupPerformanceChart />
 
         {/* 基础图表预览 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

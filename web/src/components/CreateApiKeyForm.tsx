@@ -7,11 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
-import { apiService, type Account } from '@/services/api';
+import { apiService, type Account, type ApiKey } from '@/services/api';
 
 interface CreateApiKeyFormProps {
-  editingKey?: any;
-  onSuccess: (apiKey: any) => void;
+  editingKey?: Partial<ApiKey>;
+  onSuccess: (apiKey: ApiKey) => void;
   onCancel: () => void;
 }
 
@@ -136,7 +136,7 @@ export default function CreateApiKeyForm({ editingKey, onSuccess, onCancel }: Cr
     };
   });
 
-  const updateFormData = (field: keyof FormData, value: any) => {
+  const updateFormData = (field: keyof FormData, value: string | number | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -237,29 +237,29 @@ export default function CreateApiKeyForm({ editingKey, onSuccess, onCancel }: Cr
     try {
       const requestData = {
         name: formData.name,
-        description: formData.description || null,
-        tags: formData.tags.length > 0 ? formData.tags : null,
-        tokenLimit: formData.tokenLimit ? Number(formData.tokenLimit) : null,
-        rateLimitWindow: formData.rateLimitWindow ? Number(formData.rateLimitWindow) : null,
-        rateLimitRequests: formData.rateLimitRequests ? Number(formData.rateLimitRequests) : null,
+        description: formData.description || undefined,
+        tags: formData.tags.length > 0 ? formData.tags : undefined,
+        tokenLimit: formData.tokenLimit ? Number(formData.tokenLimit) : undefined,
+        rateLimitWindow: formData.rateLimitWindow ? Number(formData.rateLimitWindow) : undefined,
+        rateLimitRequests: formData.rateLimitRequests ? Number(formData.rateLimitRequests) : undefined,
         concurrencyLimit: Number(formData.concurrencyLimit),
         dailyCostLimit: Number(formData.dailyCostLimit),
-        expiresAt: formData.expiresAt || null,
+        expiresAt: formData.expiresAt || undefined,
         permissions: formData.permissions,
-        claudeAccountId: formData.claudeAccountId || null,
-        claudeConsoleAccountId: formData.claudeConsoleAccountId || null,
-        geminiAccountId: formData.geminiAccountId || null,
+        claudeAccountId: formData.claudeAccountId || undefined,
+        claudeConsoleAccountId: formData.claudeConsoleAccountId || undefined,
+        geminiAccountId: formData.geminiAccountId || undefined,
         enableModelRestriction: formData.enableModelRestriction,
-        restrictedModels: formData.restrictedModels.length > 0 ? formData.restrictedModels : null,
+        restrictedModels: formData.restrictedModels.length > 0 ? formData.restrictedModels : undefined,
         enableClientRestriction: formData.enableClientRestriction,
-        allowedClients: formData.allowedClients.length > 0 ? formData.allowedClients : null,
+        allowedClients: formData.allowedClients.length > 0 ? formData.allowedClients : undefined,
         isEnabled: formData.isEnabled,
-        model: formData.model || null,
+        model: formData.model || undefined,
         service: formData.service
       };
 
       const result = editingKey 
-        ? await apiService.updateApiKey(editingKey.id, requestData)
+        ? await apiService.updateApiKey(editingKey.id!, requestData)
         : await apiService.createApiKey(requestData);
       onSuccess(result);
     } catch (error) {

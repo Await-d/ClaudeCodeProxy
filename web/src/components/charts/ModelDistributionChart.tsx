@@ -3,8 +3,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Ba
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { PieChart as PieChartIcon,  Zap } from 'lucide-react';
-import { apiService, type ModelStatistics, type DateFilterRequest } from '@/services/api';
+import { Badge } from '@/components/ui/badge';
+import { PieChart as PieChartIcon, Zap, Users, BarChart3 } from 'lucide-react';
+import { apiService, type ModelStatistics, type DateFilterRequest, type ApiKeyGroup } from '@/services/api';
 
 interface ModelDistributionChartProps {
   className?: string;
@@ -21,6 +22,10 @@ export default function ModelDistributionChart({ className }: ModelDistributionC
   const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
   const [metric, setMetric] = useState<'requests' | 'tokens' | 'cost'>('requests');
   const [dateRange, setDateRange] = useState('30days');
+  const [groupMode, setGroupMode] = useState<'overall' | 'by-group' | 'compare'>('overall');
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [groups, setGroups] = useState<ApiKeyGroup[]>([]);
+  const [groupComparisonData, setGroupComparisonData] = useState<any[]>([]);
 
   const fetchModelData = async () => {
     try {
@@ -31,8 +36,39 @@ export default function ModelDistributionChart({ className }: ModelDistributionC
         preset: dateRange
       };
 
-      const modelStats = await apiService.getModelStatistics(dateFilter);
-      setData(modelStats);
+      if (groupMode === 'compare' && selectedGroups.length > 0) {
+        // 获取分组对比数据
+        const comparisonPromises = selectedGroups.map(async (groupId) => {
+          try {
+            const groupStats = await apiService.getGroupStatistics(groupId);
+            const group = groups.find(g => g.id === groupId);
+            
+            // Mock 模型分布数据 - 实际应从API获取
+            const mockModelData = [
+              { model: 'claude-3.5-sonnet', requests: Math.floor(Math.random() * 1000) + 100, cost: Math.random() * 50 + 10 },
+              { model: 'claude-3-haiku', requests: Math.floor(Math.random() * 500) + 50, cost: Math.random() * 20 + 5 },
+              { model: 'gpt-4', requests: Math.floor(Math.random() * 300) + 30, cost: Math.random() * 30 + 15 }
+            ];
+            
+            return {
+              groupId,
+              groupName: group?.name || '未知分组',
+              modelDistribution: mockModelData,
+              totalRequests: mockModelData.reduce((sum, m) => sum + m.requests, 0),
+              totalCost: mockModelData.reduce((sum, m) => sum + m.cost, 0)
+            };
+          } catch (error) {
+            console.error(`获取分组 ${groupId} 模型统计失败:`, error);
+            return null;
+          }
+        });
+
+        const comparisonResults = (await Promise.all(comparisonPromises)).filter(Boolean);
+        setGroupComparisonData(comparisonResults);
+      } else {
+        const modelStats = await apiService.getModelStatistics(dateFilter);
+        setData(modelStats);
+      }
     } catch (error) {
       console.error('获取模型统计数据失败:', error);
     } finally {
@@ -40,9 +76,23 @@ export default function ModelDistributionChart({ className }: ModelDistributionC
     }
   };
 
+  const fetchGroups = async () => {
+    try {
+      const groupsResult = await apiService.getApiKeyGroups();
+      const groupsList = Array.isArray(groupsResult) ? groupsResult : groupsResult.data || [];
+      setGroups(groupsList);
+    } catch (error) {
+      console.error('获取分组列表失败:', error);
+    }
+  };
+
   useEffect(() => {
     fetchModelData();
-  }, [dateRange]);
+  }, [dateRange, groupMode, selectedGroups]);
+
+  useEffect(() => {
+    fetchGroups();
+  }, []);
 
   const formatValue = (value: number, type: string) => {
     if (type === 'cost') {
@@ -70,7 +120,10 @@ export default function ModelDistributionChart({ className }: ModelDistributionC
     }));
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; percent: number; payload: { name: string; value: number; fill: string } }>;
+  }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       return (

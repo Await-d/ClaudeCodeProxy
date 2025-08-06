@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { X, Plus, Layers } from 'lucide-react';
 import { apiService } from '@/services/api';
 import type { ApiKey } from '@/services/api';
 
@@ -39,6 +40,12 @@ interface FormData {
   isEnabled: boolean;
   model: string;
   service: string;
+  // 分组相关字段
+  selectedGroups: Array<{
+    groupId: string;
+    weight: number;
+    priority: number;
+  }>;
 }
 
 const AVAILABLE_SERVICES = [
@@ -52,6 +59,10 @@ const AVAILABLE_SERVICES = [
 export default function ApiKeyModal({ open, onClose, editingKey, onSuccess }: ApiKeyModalProps) {
   const [loading, setLoading] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const [apiKeyGroups, setApiKeyGroups] = useState<{ id: string; name: string; isEnabled: boolean }[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [groupWeight, setGroupWeight] = useState('1');
+  const [groupPriority, setGroupPriority] = useState('1');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const getInitialFormData = (editingKey?: ApiKey | null): FormData => {
@@ -78,7 +89,12 @@ export default function ApiKeyModal({ open, onClose, editingKey, onSuccess }: Ap
         allowedClients: editingKey.allowedClients || [],
         isEnabled: editingKey.isEnabled !== undefined ? editingKey.isEnabled : true,
         model: editingKey.model || '',
-        service: editingKey.service || 'all'
+        service: editingKey.service || 'all',
+        selectedGroups: editingKey.groupMappings?.map(mapping => ({
+          groupId: mapping.groupId,
+          weight: mapping.weight,
+          priority: mapping.priority ?? 1
+        })) || []
       };
     }
     return {
@@ -103,11 +119,28 @@ export default function ApiKeyModal({ open, onClose, editingKey, onSuccess }: Ap
       allowedClients: [],
       isEnabled: true,
       model: '',
-      service: 'all'
+      service: 'all',
+      selectedGroups: []
     };
   };
 
   const [formData, setFormData] = useState<FormData>(() => getInitialFormData(editingKey));
+
+  // 获取分组列表
+  useEffect(() => {
+    if (open) {
+      fetchApiKeyGroups();
+    }
+  }, [open]);
+
+  const fetchApiKeyGroups = async () => {
+    try {
+      const groupsResponse = await apiService.getApiKeyGroups();
+      setApiKeyGroups(Array.isArray(groupsResponse) ? groupsResponse : []);
+    } catch (error) {
+      console.error('Failed to fetch API key groups:', error);
+    }
+  };
 
   // 当 editingKey 改变时重新设置表单数据
   useEffect(() => {
@@ -116,7 +149,7 @@ export default function ApiKeyModal({ open, onClose, editingKey, onSuccess }: Ap
     setErrors({});
   }, [editingKey, open]);
 
-  const updateFormData = (field: keyof FormData, value: any) => {
+  const updateFormData = (field: keyof FormData, value: string | number | boolean | string[] | Array<{groupId: string; weight: number; priority: number;}>) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -132,6 +165,31 @@ export default function ApiKeyModal({ open, onClose, editingKey, onSuccess }: Ap
 
   const removeTag = (index: number) => {
     updateFormData('tags', formData.tags.filter((_, i) => i !== index));
+  };
+
+  // 分组管理函数
+  const addToGroup = () => {
+    if (selectedGroupId && !formData.selectedGroups.find(g => g.groupId === selectedGroupId)) {
+      const newGroup = {
+        groupId: selectedGroupId,
+        weight: Number(groupWeight) || 1,
+        priority: Number(groupPriority) || 1
+      };
+      updateFormData('selectedGroups', [...formData.selectedGroups, newGroup]);
+      setSelectedGroupId('');
+      setGroupWeight('1');
+      setGroupPriority('1');
+    }
+  };
+
+  const removeFromGroup = (groupId: string) => {
+    updateFormData('selectedGroups', formData.selectedGroups.filter(g => g.groupId !== groupId));
+  };
+
+  const updateGroupMapping = (groupId: string, field: 'weight' | 'priority', value: number) => {
+    updateFormData('selectedGroups', formData.selectedGroups.map(g => 
+      g.groupId === groupId ? { ...g, [field]: value } : g
+    ));
   };
 
   const validateForm = () => {
@@ -184,27 +242,30 @@ export default function ApiKeyModal({ open, onClose, editingKey, onSuccess }: Ap
     try {
       const requestData = {
         name: formData.name,
-        description: formData.description || null,
-        tags: formData.tags.length > 0 ? formData.tags : null,
-        tokenLimit: formData.tokenLimit ? Number(formData.tokenLimit) : null,
-        rateLimitWindow: formData.rateLimitWindow ? Number(formData.rateLimitWindow) : null,
-        rateLimitRequests: formData.rateLimitRequests ? Number(formData.rateLimitRequests) : null,
+        description: formData.description || undefined,
+        tags: formData.tags.length > 0 ? formData.tags : undefined,
+        tokenLimit: formData.tokenLimit ? Number(formData.tokenLimit) : undefined,
+        rateLimitWindow: formData.rateLimitWindow ? Number(formData.rateLimitWindow) : undefined,
+        rateLimitRequests: formData.rateLimitRequests ? Number(formData.rateLimitRequests) : undefined,
         concurrencyLimit: Number(formData.concurrencyLimit),
         dailyCostLimit: Number(formData.dailyCostLimit),
         monthlyCostLimit: Number(formData.monthlyCostLimit),
         totalCostLimit: Number(formData.totalCostLimit),
-        expiresAt: formData.expiresAt || null,
+        expiresAt: formData.expiresAt || undefined,
         permissions: formData.permissions,
-        claudeAccountId: formData.claudeAccountId || null,
-        claudeConsoleAccountId: formData.claudeConsoleAccountId || null,
-        geminiAccountId: formData.geminiAccountId || null,
+        claudeAccountId: formData.claudeAccountId || undefined,
+        claudeConsoleAccountId: formData.claudeConsoleAccountId || undefined,
+        geminiAccountId: formData.geminiAccountId || undefined,
         enableModelRestriction: formData.enableModelRestriction,
-        restrictedModels: formData.restrictedModels.length > 0 ? formData.restrictedModels : null,
+        restrictedModels: formData.restrictedModels.length > 0 ? formData.restrictedModels : undefined,
         enableClientRestriction: formData.enableClientRestriction,
-        allowedClients: formData.allowedClients.length > 0 ? formData.allowedClients : null,
+        allowedClients: formData.allowedClients.length > 0 ? formData.allowedClients : undefined,
         isEnabled: formData.isEnabled,
-        model: formData.model || null,
-        service: formData.service
+        model: formData.model || undefined,
+        service: formData.service,
+        // 分组相关数据 - 转换为API需要的格式
+        groupIds: formData.selectedGroups.map(g => g.groupId),
+        groupMappings: undefined
       };
 
       const result = editingKey 
@@ -229,6 +290,13 @@ export default function ApiKeyModal({ open, onClose, editingKey, onSuccess }: Ap
       size="5xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="basic">基本配置</TabsTrigger>
+            <TabsTrigger value="groups">分组管理</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="basic" className="space-y-6 mt-6">
           {/* 基本信息 */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">基本信息</h3>
@@ -401,19 +469,159 @@ export default function ApiKeyModal({ open, onClose, editingKey, onSuccess }: Ap
               </ul>
             </div>
           </div>
+          </TabsContent>
 
-          {/* 操作按钮 */}
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              取消
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading 
-                ? (editingKey ? '更新中...' : '创建中...') 
-                : (editingKey ? '更新 API Key' : '创建 API Key')
-              }
-            </Button>
-          </div>
+          <TabsContent value="groups" className="space-y-6 mt-6">
+            {/* 分组管理 */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">分组管理</h3>
+              <p className="text-sm text-muted-foreground">
+                将此API Key添加到一个或多个分组中，可以实现负载均衡和故障转移。
+              </p>
+
+              {/* 添加到分组 */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <h4 className="font-medium">添加到分组</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label>选择分组</Label>
+                    <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择分组" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {apiKeyGroups
+                          .filter(group => !formData.selectedGroups.find(g => g.groupId === group.id))
+                          .map(group => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.name}
+                            </SelectItem>
+                          ))
+                        }
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>权重</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={groupWeight}
+                      onChange={(e) => setGroupWeight(e.target.value)}
+                      placeholder="1-100"
+                    />
+                    <p className="text-xs text-muted-foreground">权重越高，分配到的请求越多</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>优先级</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={groupPriority}
+                      onChange={(e) => setGroupPriority(e.target.value)}
+                      placeholder="1-10"
+                    />
+                    <p className="text-xs text-muted-foreground">优先级越高，故障转移时越优先</p>
+                  </div>
+                  <div className="space-y-2 flex items-end">
+                    <Button 
+                      type="button" 
+                      onClick={addToGroup}
+                      disabled={!selectedGroupId}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      添加
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 已选择的分组 */}
+              {formData.selectedGroups.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="font-medium">已加入的分组</h4>
+                  <div className="space-y-3">
+                    {formData.selectedGroups.map((groupMapping) => {
+                      const group = apiKeyGroups.find(g => g.id === groupMapping.groupId);
+                      return (
+                        <div key={groupMapping.groupId} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <Layers className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">{group?.name || `分组 ${groupMapping.groupId}`}</p>
+                              <p className="text-sm text-muted-foreground">
+                                权重: {groupMapping.weight} | 优先级: {groupMapping.priority}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2">
+                              <Label className="text-xs">权重</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={groupMapping.weight}
+                                onChange={(e) => updateGroupMapping(groupMapping.groupId, 'weight', Number(e.target.value))}
+                                className="w-16 h-8 text-xs"
+                              />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Label className="text-xs">优先级</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={groupMapping.priority}
+                                onChange={(e) => updateGroupMapping(groupMapping.groupId, 'priority', Number(e.target.value))}
+                                className="w-16 h-8 text-xs"
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFromGroup(groupMapping.groupId)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 分组说明 */}
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-medium text-foreground mb-2">💡 分组功能说明</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• 权重：决定负载均衡时的请求分配比例，权重越高分配越多</li>
+                  <li>• 优先级：故障转移时的优先顺序，优先级越高越优先使用</li>
+                  <li>• 一个API Key可以同时属于多个分组</li>
+                  <li>• 分组启用负载均衡策略后，会根据权重和策略自动分配请求</li>
+                </ul>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* 操作按钮 */}
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button type="button" variant="outline" onClick={onClose}>
+            取消
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading 
+              ? (editingKey ? '更新中...' : '创建中...') 
+              : (editingKey ? '更新 API Key' : '创建 API Key')
+            }
+          </Button>
+        </div>
         </form>
     </Modal>
   );

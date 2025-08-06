@@ -4,7 +4,7 @@ import { FileSpreadsheet, FileImage, FileText } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ExportButtonProps {
-  data: any;
+  data: Record<string, unknown> | Record<string, unknown>[];
   filename?: string;
   className?: string;
 }
@@ -13,7 +13,7 @@ export default function ExportButton({ data, filename = 'export', className }: E
   const [format, setFormat] = useState<'csv' | 'json' | 'png'>('csv');
   const [isExporting, setIsExporting] = useState(false);
 
-  const exportToCsv = (data: any[], filename: string) => {
+  const exportToCsv = (data: Record<string, unknown>[], filename: string) => {
     if (!data.length) return;
     
     const headers = Object.keys(data[0]);
@@ -29,7 +29,7 @@ export default function ExportButton({ data, filename = 'export', className }: E
     link.click();
   };
 
-  const exportToJson = (data: any, filename: string) => {
+  const exportToJson = (data: Record<string, unknown> | Record<string, unknown>[], filename: string) => {
     const jsonString = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const link = document.createElement('a');

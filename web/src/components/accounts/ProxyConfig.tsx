@@ -20,7 +20,7 @@ export default function ProxyConfigComponent({ value, onChange }: ProxyConfigPro
     setShowAuth(!!(value.username || value.password));
   }, [value.username, value.password]);
 
-  const handleChange = (field: keyof ProxyConfig, newValue: any) => {
+  const handleChange = (field: keyof ProxyConfig, newValue: string | number | boolean) => {
     onChange({
       ...value,
       [field]: newValue

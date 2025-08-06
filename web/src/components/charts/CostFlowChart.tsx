@@ -95,7 +95,7 @@ export default function CostFlowChart({ className }: CostFlowChartProps) {
 
         if (rawFlowData && rawFlowData.length > 0) {
           const flowData: FlowData[] = [];
-          const apiKeyGroups = new Map<string, any[]>();
+          const apiKeyGroups = new Map<string, { model: string; cost: number; requests: number }[]>();
           const modelGroups = new Map<string, number>();
 
           // 处理原始数据
@@ -229,12 +229,16 @@ export default function CostFlowChart({ className }: CostFlowChartProps) {
   const formatNumber = (value: number) => (value ?? 0).toLocaleString();
 
   // 自定义Tooltip组件
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} style={{ color: entry.color }}>
               {`${entry.name}: ${entry.name.includes('cost') ? formatCurrency(entry.value) : formatNumber(entry.value)}`}
             </p>

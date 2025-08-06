@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Key, Plus, Edit2, Trash2, Eye, EyeOff, Clock, DollarSign, Activity, Shield, Server, Tag, Search, Filter } from 'lucide-react';
+import { Key, Plus, Edit2, Trash2, Eye, EyeOff, Clock, DollarSign, Activity, Shield, Server, Tag, Search, Filter, Layers } from 'lucide-react';
 import { apiService } from '@/services/api';
 import type { ApiKey } from '@/services/api';
 import ApiKeyModal from '@/components/ApiKeyModal';
@@ -23,10 +23,13 @@ export default function ApiKeysPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [serviceFilter, setServiceFilter] = useState<'all' | 'claude' | 'gemini' | 'openai'>('all');
+  const [groupFilter, setGroupFilter] = useState<'all' | string>('all');
+  const [apiKeyGroups, setApiKeyGroups] = useState<any[]>([]);
   const { showConfirmModal, confirmOptions, showConfirm, handleConfirm, handleCancel } = useConfirm();
 
   useEffect(() => {
     fetchApiKeys();
+    fetchApiKeyGroups();
   }, []);
 
   const fetchApiKeys = async () => {
@@ -37,6 +40,15 @@ export default function ApiKeysPage() {
       console.error('Failed to fetch API keys:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchApiKeyGroups = async () => {
+    try {
+      const groupsResponse = await apiService.getApiKeyGroups();
+      setApiKeyGroups(Array.isArray(groupsResponse) ? groupsResponse : []);
+    } catch (error) {
+      console.error('Failed to fetch API key groups:', error);
     }
   };
 
@@ -126,7 +138,11 @@ export default function ApiKeysPage() {
     const matchesService = serviceFilter === 'all' || 
       apiKey.service.toLowerCase() === serviceFilter;
     
-    return matchesSearch && matchesStatus && matchesService;
+    // 分组过滤
+    const matchesGroup = groupFilter === 'all' || 
+      (apiKey.groupIds && apiKey.groupIds.includes(groupFilter));
+    
+    return matchesSearch && matchesStatus && matchesService && matchesGroup;
   });
 
   // 获取 API Key 状态
@@ -206,6 +222,20 @@ export default function ApiKeysPage() {
               <SelectItem value="claude">Claude</SelectItem>
               <SelectItem value="gemini">Gemini</SelectItem>
               <SelectItem value="openai">OpenAI</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={groupFilter} onValueChange={(value: 'all' | string) => setGroupFilter(value)}>
+            <SelectTrigger className="w-32">
+              <Layers className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部分组</SelectItem>
+              {apiKeyGroups.map(group => (
+                <SelectItem key={group.id} value={group.id}>
+                  {group.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -329,6 +359,26 @@ export default function ApiKeysPage() {
                           {tag}
                         </Badge>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 所属分组 */}
+                {apiKey.groupIds && apiKey.groupIds.length > 0 && (
+                  <div>
+                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Layers className="h-3 w-3" />
+                      所属分组
+                    </Label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {apiKey.groupIds.map((groupId, index) => {
+                        const group = apiKeyGroups.find(g => g.id === groupId);
+                        return (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {group?.name || `分组 ${groupId.slice(0, 8)}`}
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -465,6 +515,7 @@ export default function ApiKeysPage() {
               setSearchTerm('');
               setStatusFilter('all');
               setServiceFilter('all');
+              setGroupFilter('all');
             }}>
               清除过滤器
             </Button>

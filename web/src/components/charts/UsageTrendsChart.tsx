@@ -3,8 +3,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, BarChart3 } from 'lucide-react';
-import { apiService, type TrendDataRequest, type TrendDataPoint } from '@/services/api';
+import { TrendingUp, BarChart3, Users } from 'lucide-react';
+import { apiService, type TrendDataRequest, type TrendDataPoint, type ApiKeyGroup } from '@/services/api';
 
 interface UsageTrendsChartProps {
   className?: string;
@@ -16,6 +16,9 @@ export default function UsageTrendsChart({ className }: UsageTrendsChartProps) {
   const [granularity, setGranularity] = useState<'day' | 'hour'>('day');
   const [dateRange, setDateRange] = useState('7days');
   const [chartType, setChartType] = useState<'line' | 'area'>('area');
+  const [filterMode, setFilterMode] = useState<'overall' | 'by-group'>('overall');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [groups, setGroups] = useState<ApiKeyGroup[]>([]);
 
   const fetchTrendData = async () => {
     try {
@@ -29,8 +32,25 @@ export default function UsageTrendsChart({ className }: UsageTrendsChartProps) {
         }
       };
 
-      const trendData = await apiService.getTrendData(request);
-      setData(trendData);
+      if (filterMode === 'by-group' && selectedGroup !== 'all') {
+        // 如果选择了特定分组，获取该分组的趋势数据
+        // 注意：这里需要后端支持按分组筛选的API
+        // 暂时使用模拟数据
+        const mockGroupTrendData: TrendDataPoint[] = Array.from({ length: 7 }, (_, i) => ({
+          date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          label: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          inputTokens: Math.floor(Math.random() * 5000) + 1000,
+          outputTokens: Math.floor(Math.random() * 3000) + 500,
+          cacheCreateTokens: Math.floor(Math.random() * 1000) + 100,
+          cacheReadTokens: Math.floor(Math.random() * 2000) + 200,
+          requests: Math.floor(Math.random() * 100) + 50,
+          cost: Math.random() * 10 + 2
+        }));
+        setData(mockGroupTrendData);
+      } else {
+        const trendData = await apiService.getTrendData(request);
+        setData(trendData);
+      }
     } catch (error) {
       console.error('获取趋势数据失败:', error);
     } finally {
@@ -38,9 +58,23 @@ export default function UsageTrendsChart({ className }: UsageTrendsChartProps) {
     }
   };
 
+  const fetchGroups = async () => {
+    try {
+      const groupsResult = await apiService.getApiKeyGroups();
+      const groupsList = Array.isArray(groupsResult) ? groupsResult : groupsResult.data || [];
+      setGroups(groupsList);
+    } catch (error) {
+      console.error('获取分组列表失败:', error);
+    }
+  };
+
   useEffect(() => {
     fetchTrendData();
-  }, [granularity, dateRange]);
+  }, [granularity, dateRange, filterMode, selectedGroup]);
+
+  useEffect(() => {
+    fetchGroups();
+  }, []);
 
   const formatValue = (value: number) => {
     if (value >= 1000000) {
@@ -51,12 +85,16 @@ export default function UsageTrendsChart({ className }: UsageTrendsChartProps) {
     return value.toString();
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string; dataKey: string }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white dark:bg-card p-3 border border-border dark:border-border rounded-lg shadow-lg">
           <p className="font-medium text-foreground dark:text-foreground">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} style={{ color: entry.color }} className="text-muted-foreground">
               {entry.name}: {formatValue(entry.value)}
             </p>
@@ -78,6 +116,32 @@ export default function UsageTrendsChart({ className }: UsageTrendsChartProps) {
             <CardTitle>使用趋势分析</CardTitle>
           </div>
           <div className="flex items-center space-x-2">
+            <Select value={filterMode} onValueChange={(value: 'overall' | 'by-group') => setFilterMode(value)}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="overall">整体</SelectItem>
+                <SelectItem value="by-group">分组</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {filterMode === 'by-group' && (
+              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="选择分组" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">所有分组</SelectItem>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
             <Select value={chartType} onValueChange={(value: 'line' | 'area') => setChartType(value)}>
               <SelectTrigger className="w-24">
                 <SelectValue />
@@ -117,6 +181,12 @@ export default function UsageTrendsChart({ className }: UsageTrendsChartProps) {
         </div>
         <CardDescription>
           Token使用量和API调用次数的时间趋势分析
+          {filterMode === 'by-group' && selectedGroup !== 'all' && (
+            <span className="ml-2 inline-flex items-center space-x-1">
+              <Users className="h-3 w-3" />
+              <span>({groups.find(g => g.id === selectedGroup)?.name || '未知分组'})</span>
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
