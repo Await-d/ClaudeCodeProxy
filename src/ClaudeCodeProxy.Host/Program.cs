@@ -145,7 +145,7 @@ public static class Program
 
         await using var scope = app.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
-
+        await dbContext.EnsureCreatedAsync();
         // 执行数据库迁移
         await dbContext.MigrateAsync();
     }
