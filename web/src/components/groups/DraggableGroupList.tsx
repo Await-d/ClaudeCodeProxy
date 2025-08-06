@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -6,8 +6,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
-  DragStartEvent,
+  type DragEndEvent,
+  type DragStartEvent,
   DragOverlay,
 } from '@dnd-kit/core';
 import {
@@ -35,7 +35,7 @@ import {
   XCircle,
   Clock
 } from 'lucide-react';
-import { ApiKeyGroup } from '@/types/apiKeyGroups';
+import type { ApiKeyGroup } from '@/types/apiKeyGroups';
 
 interface DraggableGroupListProps {
   groups: ApiKeyGroup[];

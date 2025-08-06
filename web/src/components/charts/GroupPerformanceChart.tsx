@@ -5,7 +5,6 @@ import {
   Cell, 
   BarChart, 
   Bar, 
-  LineChart, 
   Line, 
   XAxis, 
   YAxis, 
@@ -31,10 +30,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import type { 
-  ApiKeyGroup, 
-  GroupStatistics, 
-  ApiKeyGroupsOverviewResponse,
-  BatchHealthCheckResponse 
+  ApiKeyGroupsOverviewResponse
 } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -57,7 +53,7 @@ interface GroupPerformanceChartProps {
 
 export default function GroupPerformanceChart({ className }: GroupPerformanceChartProps) {
   const { actualTheme } = useTheme();
-  const [groups, setGroups] = useState<ApiKeyGroup[]>([]);
+
   const [performanceData, setPerformanceData] = useState<GroupPerformanceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -109,16 +105,14 @@ export default function GroupPerformanceChart({ className }: GroupPerformanceCha
         apiService.getApiKeyGroupsOverview().catch(() => null)
       ]);
 
-      const groupsList = Array.isArray(groupsResult) ? groupsResult : groupsResult.data || [];
-      setGroups(groupsList);
+      const groupsList = Array.isArray(groupsResult) ? groupsResult : (groupsResult as any)?.data || [];
       setOverview(overviewResult);
 
       // 为每个分组获取详细统计数据
-      const performancePromises = groupsList.map(async (group) => {
+      const performancePromises = groupsList.map(async (group: any) => {
         try {
-          const [statistics, healthStatus] = await Promise.all([
-            apiService.getGroupStatistics(group.id).catch(() => null),
-            apiService.getGroupHealthStatus(group.id).catch(() => null)
+          const [statistics] = await Promise.all([
+            apiService.getGroupStatistics(group.id).catch(() => null)
           ]);
 
           return {
@@ -126,7 +120,7 @@ export default function GroupPerformanceChart({ className }: GroupPerformanceCha
             groupName: group.name,
             requests: statistics?.totalRequests || group.totalRequests || 0,
             responseTime: statistics?.averageResponseTime || group.avgResponseTime || 0,
-            errorRate: statistics ? (1 - statistics.successRate / 100) * 100 : 5,
+            errorRate: statistics ? (1 - (statistics.successRate || 0) / 100) * 100 : 5,
             healthStatus: (group.healthStatus || 'unknown') as GroupPerformanceData['healthStatus'],
             loadBalanceEfficiency: Math.random() * 20 + 80, // Mock data - 实际应从API获取
             failoverCount: Math.floor(Math.random() * 10), // Mock data - 实际应从API获取
@@ -218,12 +212,16 @@ export default function GroupPerformanceChart({ className }: GroupPerformanceCha
     return num.toString();
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string; dataKey: string }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card p-3 border border-border rounded-lg shadow-lg">
           <p className="font-medium text-card-foreground">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} style={{ color: entry.color }} className="text-sm">
               {entry.name}: {
                 entry.name.includes('率') || entry.name.includes('效率') ? 
@@ -264,8 +262,8 @@ export default function GroupPerformanceChart({ className }: GroupPerformanceCha
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, value, percent }) => 
-                  `${name}: ${formatNumber(value)} (${((percent || 0) * 100).toFixed(1)}%)`
+                label={({ name, value, percent }: { name?: string; value?: number; percent?: number }) => 
+                  `${name || ''}: ${formatNumber(value || 0)} (${((percent || 0) * 100).toFixed(1)}%)`
                 }
                 outerRadius={80}
                 fill="#8884d8"
@@ -409,7 +407,7 @@ export default function GroupPerformanceChart({ className }: GroupPerformanceCha
             <CardTitle>分组性能分析</CardTitle>
           </div>
           <div className="flex items-center space-x-2">
-            <Select value={selectedChart} onValueChange={(value: any) => setSelectedChart(value)}>
+            <Select value={selectedChart} onValueChange={(value: 'requests' | 'balance' | 'health' | 'failover') => setSelectedChart(value)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>

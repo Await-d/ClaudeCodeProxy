@@ -143,12 +143,12 @@ function ConfirmationStage({
               )}
               {operation.type === 'update_priority' && operation.payload && (
                 <p className="text-sm mt-1">
-                  新优先级: {operation.payload.priority}
+                  新优先级: {(operation.payload as { priority: number }).priority}
                 </p>
               )}
               {(operation.type === 'add_tag' || operation.type === 'remove_tag') && operation.payload && (
                 <p className="text-sm mt-1">
-                  标签: "{operation.payload.tag}"
+                  标签: "{(operation.payload as { tag: string }).tag}"
                 </p>
               )}
             </div>

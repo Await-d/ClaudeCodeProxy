@@ -120,22 +120,31 @@ export function useGroupRealtime(groupId?: string) {
         
         switch (update.type) {
           case 'health_check':
-            group.healthStatus = update.data.healthStatus;
-            group.healthyApiKeyCount = update.data.healthyKeysCount;
+            group.healthStatus = (update.data.healthStatus as "healthy" | "unhealthy" | "warning" | "unknown") || 'unknown';
+            group.healthyApiKeyCount = (update.data.healthyKeysCount as number) || 0;
             group.lastHealthCheckAt = update.timestamp;
             break;
             
           case 'statistics':
-            group.statistics = { ...group.statistics, ...update.data };
+            group.statistics = { 
+              totalRequests: (update.data.totalRequests as number) || 0,
+              successfulRequests: (update.data.successfulRequests as number) || 0,
+              failedRequests: (update.data.failedRequests as number) || 0,
+              totalCost: (update.data.totalCost as number) || 0,
+              averageResponseTime: (update.data.averageResponseTime as number) || 0,
+              currentConcurrentConnections: (update.data.currentConcurrentConnections as number) || 0,
+              lastUsedAt: (update.data.lastUsedAt as string) || new Date().toISOString(),
+              ...group.statistics
+            } as GroupStatistics;
             break;
             
           case 'status_change':
-            group.isEnabled = update.data.isEnabled;
+            group.isEnabled = (update.data.isEnabled as boolean) || false;
             break;
             
           case 'mapping_change':
-            group.apiKeyCount = update.data.apiKeyCount;
-            group.healthyApiKeyCount = update.data.healthyApiKeyCount;
+            group.apiKeyCount = (update.data.apiKeyCount as number) || 0;
+            group.healthyApiKeyCount = (update.data.healthyApiKeyCount as number) || 0;
             break;
         }
         
@@ -251,7 +260,8 @@ export function useGroupStatistics(groupId: string, refreshInterval = 60000) {
       
       setStatistics(mockStats);
     } catch (err) {
-      setError(err.message || 'Failed to fetch statistics');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch statistics';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -314,7 +324,8 @@ export function useBatchOperation<T = any>() {
         results.success++;
       } catch (error) {
         results.failed++;
-        results.errors.push(`${items[i]}: ${error.message || 'Unknown error'}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        results.errors.push(`${items[i]}: ${errorMessage}`);
       }
 
       const currentProgress = Math.round(((i + 1) / items.length) * 100);
@@ -366,7 +377,8 @@ export function useAutoSave<T>(
       await saveFunction(data);
       setLastSaved(new Date());
     } catch (err) {
-      setError(err.message || 'Save failed');
+      const errorMessage = err instanceof Error ? err.message : 'Save failed';
+      setError(errorMessage);
     } finally {
       setIsSaving(false);
     }

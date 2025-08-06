@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { UserCircle, ChevronRight, Plus, Trash2, Settings, Zap } from 'lucide-react';
-import { apiService, type Account, type OAuthTokenInfo } from '@/services/api';
+import { apiService, type Account, type OAuthTokenInfo, type ProxyConfig } from '@/services/api';
 import { showToast } from '@/utils/toast';
 import { useConfirm } from '@/hooks/useConfirm';
 import ProxyConfigComponent from './ProxyConfig';
@@ -33,15 +33,6 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
   const [loading, setLoading] = useState(false);
 
   // 表单数据
-  interface ProxyConfig {
-    enabled: boolean;
-    type: 'socks5' | 'http' | 'https';
-    host: string;
-    port: string;
-    username?: string;
-    password?: string;
-  }
-
   const [form, setForm] = useState({
     platform: 'claude' as 'claude' | 'claude-console' | 'gemini' | 'openai' | 'thor',
     addType: 'oauth' as 'oauth' | 'manual',
@@ -191,7 +182,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
     }
   }, [form.platform]);
 
-  const updateForm = (field: string, value: string | number | boolean | Record<string, unknown>) => {
+  const updateForm = (field: string, value: string | number | boolean | Record<string, unknown> | ProxyConfig) => {
     setForm(prev => ({ ...prev, [field]: value }));
     
     // 清除对应的错误
@@ -234,14 +225,20 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
         platform: form.platform,
         description: form.description,
         accountType: form.accountType,
-        proxy: form.proxy.enabled ? {
+        proxy: form.proxy.enabled ? (form.platform === 'thor' ? {
           enabled: true,
           type: form.proxy.type,
           host: form.proxy.host,
           port: form.proxy.port,
           username: form.proxy.username || undefined,
           password: form.proxy.password || undefined
-        } : undefined
+        } : {
+          type: form.proxy.type,
+          host: form.proxy.host,
+          port: parseInt(form.proxy.port, 10) || 8080,
+          username: form.proxy.username || undefined,
+          password: form.proxy.password || undefined
+        }) : undefined
       };
 
       if (form.platform === 'claude') {
@@ -266,11 +263,42 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
 
       let result;
       if (form.platform === 'claude') {
-        result = await apiService.createClaudeAccount(data);
+        const claudeData = {
+          ...data,
+          proxy: form.proxy.enabled ? {
+            type: data.proxy?.type || form.proxy.type,
+            host: data.proxy?.host || form.proxy.host,
+            port: parseInt(form.proxy.port, 10) || 8080,
+            username: data.proxy?.username,
+            password: data.proxy?.password
+          } : undefined
+        };
+        result = await apiService.createClaudeAccount(claudeData);
       } else if (form.platform === 'gemini') {
-        result = await apiService.createGeminiAccount(data);
+        const geminiData = {
+          ...data,
+          proxy: form.proxy.enabled ? {
+            type: data.proxy?.type || form.proxy.type,
+            host: data.proxy?.host || form.proxy.host,
+            port: parseInt(form.proxy.port, 10) || 8080,
+            username: data.proxy?.username,
+            password: data.proxy?.password
+          } : undefined
+        };
+        result = await apiService.createGeminiAccount(geminiData);
       } else if (form.platform === 'thor') {
-        result = await apiService.createAccount(data);
+        const thorData = {
+          ...data,
+          proxy: form.proxy.enabled ? {
+            enabled: true,
+            type: form.proxy.type,
+            host: form.proxy.host,
+            port: form.proxy.port,
+            username: form.proxy.username || undefined,
+            password: form.proxy.password || undefined
+          } : undefined
+        };
+        result = await apiService.createAccount(thorData);
       }
 
       onSuccess(result);
@@ -323,14 +351,20 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
         platform: form.platform,
         description: form.description,
         accountType: form.accountType,
-        proxy: form.proxy.enabled ? {
+        proxy: form.proxy.enabled ? (form.platform === 'thor' ? {
           enabled: true,
           type: form.proxy.type,
           host: form.proxy.host,
           port: form.proxy.port,
           username: form.proxy.username || undefined,
           password: form.proxy.password || undefined
-        } : undefined
+        } : {
+          type: form.proxy.type,
+          host: form.proxy.host,
+          port: parseInt(form.proxy.port, 10) || 8080,
+          username: form.proxy.username || undefined,
+          password: form.proxy.password || undefined
+        }) : undefined
       };
 
       if (form.platform === 'claude') {
@@ -380,15 +414,67 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
 
       let result;
       if (form.platform === 'claude') {
-        result = await apiService.createClaudeAccount(data);
+        const claudeData = {
+          ...data,
+          proxy: form.proxy.enabled ? {
+            type: form.proxy.type,
+            host: form.proxy.host,
+            port: parseInt(form.proxy.port, 10) || 8080,
+            username: form.proxy.username || undefined,
+            password: form.proxy.password || undefined
+          } : undefined
+        };
+        result = await apiService.createClaudeAccount(claudeData);
       } else if (form.platform === 'claude-console') {
-        result = await apiService.createClaudeConsoleAccount(data);
+        const claudeConsoleData = {
+          ...data,
+          proxy: form.proxy.enabled ? {
+            type: form.proxy.type,
+            host: form.proxy.host,
+            port: parseInt(form.proxy.port, 10) || 8080,
+            username: form.proxy.username || undefined,
+            password: form.proxy.password || undefined
+          } : undefined
+        };
+        result = await apiService.createClaudeConsoleAccount(claudeConsoleData);
       } else if (form.platform === 'openai') {
-        result = await apiService.createAccount(data);
+        const openaiData = {
+          ...data,
+          proxy: form.proxy.enabled ? {
+            enabled: true,
+            type: form.proxy.type,
+            host: form.proxy.host,
+            port: form.proxy.port,
+            username: form.proxy.username || undefined,
+            password: form.proxy.password || undefined
+          } : undefined
+        };
+        result = await apiService.createAccount(openaiData);
       } else if (form.platform === 'thor') {
-        result = await apiService.createAccount(data);
+        const thorData = {
+          ...data,
+          proxy: form.proxy.enabled ? {
+            enabled: true,
+            type: form.proxy.type,
+            host: form.proxy.host,
+            port: form.proxy.port,
+            username: form.proxy.username || undefined,
+            password: form.proxy.password || undefined
+          } : undefined
+        };
+        result = await apiService.createAccount(thorData);
       } else {
-        result = await apiService.createGeminiAccount(data);
+        const geminiData = {
+          ...data,
+          proxy: form.proxy.enabled ? {
+            type: form.proxy.type,
+            host: form.proxy.host,
+            port: parseInt(form.proxy.port, 10) || 8080,
+            username: form.proxy.username || undefined,
+            password: form.proxy.password || undefined
+          } : undefined
+        };
+        result = await apiService.createGeminiAccount(geminiData);
       }
 
       onSuccess(result);
@@ -425,10 +511,9 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
       description: form.description,
       accountType: form.accountType,
       proxy: form.proxy.enabled ? {
-          enabled: true,
           type: form.proxy.type,
           host: form.proxy.host,
-          port: form.proxy.port,
+          port: parseInt(form.proxy.port, 10) || 8080,
           username: form.proxy.username || undefined,
           password: form.proxy.password || undefined
         } : undefined
@@ -704,7 +789,7 @@ export default function AccountModal({ show, account, onClose, onSuccess }: Acco
                         onChange={(e) => updateForm('addType', e.target.value)}
                         className="mr-2"
                       />
-                      <span className="text-sm text-foreground">{form.platform === 'thor' ? 'Token 快捷获取 (推荐)' : 'OAuth 授权 (推荐)'}</span>
+                      <span className="text-sm text-foreground">OAuth 授权 (推荐)</span>
                     </label>
                     <label className="flex items-center cursor-pointer">
                       <input 

@@ -4,7 +4,6 @@ import { ErrorBoundary, initializeErrorHandling } from '@/components/errors/Erro
 import { 
   initializePerformanceMonitoring,
   useMemoryLeakPrevention,
-  useMemoryMonitoring,
   smartMemo
 } from '@/utils/performance';
 
@@ -14,7 +13,7 @@ export function useApplicationMonitoring() {
 
   useEffect(() => {
     // 初始化错误处理
-    const errorHandler = initializeErrorHandling();
+    initializeErrorHandling();
     
     // 初始化性能监控
     const performanceMonitor = initializePerformanceMonitoring();
@@ -25,7 +24,10 @@ export function useApplicationMonitoring() {
     });
 
     // 监控内存使用
-    useMemoryMonitoring();
+    const memoryMonitor = initializePerformanceMonitoring();
+    addCleanup(() => {
+      memoryMonitor.destroy();
+    });
     
     return () => {
       // 组件卸载时的清理将由useMemoryLeakPrevention处理
@@ -48,12 +50,14 @@ export function withPerformanceAndErrorBoundary<P extends object>(
     ? smartMemo(Component)
     : Component;
 
-  const WrappedComponent = React.forwardRef<any, P>((props: P, ref) => {
+  const WrappedComponent = React.forwardRef<unknown, React.PropsWithoutRef<P>>((props, ref) => {
     return React.createElement(ErrorBoundary, 
-      { fallback: errorFallback },
-      React.createElement(OptimizedComponent, { ...props, ref })
+      { 
+        fallback: errorFallback,
+        children: React.createElement(OptimizedComponent, { ...props as P, ref })
+      }
     );
-  }) as React.ComponentType<P>;
+  }) as unknown as React.ComponentType<P>;
 
   WrappedComponent.displayName = `WithPerformanceAndErrorBoundary(${Component.displayName || Component.name})`;
   

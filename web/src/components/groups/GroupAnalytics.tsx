@@ -155,7 +155,7 @@ function CostMetrics({ metrics }: { metrics: GroupAnalysisData['costMetrics'] })
 // 使用模式图表组件
 function UsagePatterns({ patterns }: { patterns: GroupAnalysisData['usagePatterns'] }) {
   // 峰值时段数据
-  const hourlyData = patterns.peakHours.map((hour, index) => ({
+  const hourlyData = patterns.peakHours.map((hour) => ({
     hour: `${hour}:00`,
     requests: patterns.requestDistribution[hour.toString()] || 0,
   }));
@@ -212,7 +212,7 @@ function UsagePatterns({ patterns }: { patterns: GroupAnalysisData['usagePattern
                   dataKey="value"
                   label={({ name, value }) => `${name}: ${value}`}
                 >
-                  {modelData.map((entry, index) => (
+                  {modelData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

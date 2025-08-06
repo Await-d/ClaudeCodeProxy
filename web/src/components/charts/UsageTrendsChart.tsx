@@ -61,7 +61,7 @@ export default function UsageTrendsChart({ className }: UsageTrendsChartProps) {
   const fetchGroups = async () => {
     try {
       const groupsResult = await apiService.getApiKeyGroups();
-      const groupsList = Array.isArray(groupsResult) ? groupsResult : groupsResult.data || [];
+      const groupsList = Array.isArray(groupsResult) ? groupsResult : (groupsResult as any).data || [];
       setGroups(groupsList);
     } catch (error) {
       console.error('获取分组列表失败:', error);
@@ -196,7 +196,7 @@ export default function UsageTrendsChart({ className }: UsageTrendsChartProps) {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={320}>
-            <ChartComponent data={data}>
+            <ChartComponent data={data as TrendDataPoint[]}>
               <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
               <XAxis 
                 dataKey={granularity === 'day' ? 'label' : 'label'} 

@@ -145,7 +145,7 @@ export default function CostFlowChart({ className }: CostFlowChartProps) {
             }));
 
             treemapChildren.push({
-              name: items[0].apiKeyName.substring(0, 15),
+              name: ((items[0] as any)?.apiKeyName || 'Unknown').substring(0, 15),
               size: totalCost,
               fill: colors[colorIndex % colors.length],
               children

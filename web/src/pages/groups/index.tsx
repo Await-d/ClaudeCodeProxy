@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -105,11 +105,11 @@ export default function ApiKeyGroupsPage({ className = '' }: ApiKeyGroupsPagePro
   const { isHelpVisible, showHelp, hideHelp } = useShortcutHelp();
 
   // 搜索框引用
-  const searchInputRef = useState<HTMLInputElement>(null);
+  const [searchInputRef, setSearchInputRef] = useState<HTMLInputElement | null>(null);
 
   // 搜索快捷键
   useSearchShortcut(() => {
-    searchInputRef.current?.focus();
+    searchInputRef?.focus();
   });
 
   // 过滤后的分组数据
@@ -164,8 +164,8 @@ export default function ApiKeyGroupsPage({ className = '' }: ApiKeyGroupsPagePro
             bValue = b.lastUsedAt ? new Date(b.lastUsedAt).getTime() : 0;
             break;
           case 'apiKeyCount':
-            aValue = a.totalApiKeys ?? 0;
-            bValue = b.totalApiKeys ?? 0;
+            aValue = a.apiKeyCount ?? 0;
+            bValue = b.apiKeyCount ?? 0;
             break;
           case 'health': {
             const healthOrder = { healthy: 4, warning: 3, unhealthy: 2, unknown: 1 };
@@ -382,9 +382,10 @@ export default function ApiKeyGroupsPage({ className = '' }: ApiKeyGroupsPagePro
   const handleImportConfig = async (config: GroupConfigExport) => {
     try {
       // 实现导入逻辑
+      console.log('Importing config:', config);
       showToast('配置导入功能待实现', 'info');
     } catch (error: any) {
-      showToast(error.message || '导入失败', 'error');
+      showToast(error?.message || '导入失败', 'error');
     }
   };
 
@@ -608,7 +609,7 @@ export default function ApiKeyGroupsPage({ className = '' }: ApiKeyGroupsPagePro
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
-                      ref={searchInputRef}
+                      ref={setSearchInputRef}
                       placeholder="搜索分组名称、描述或标签..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}

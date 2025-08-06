@@ -11,7 +11,7 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { apiService } from '@/services/api';
 import ConfirmModal from '@/components/common/ConfirmModal';
 import ApiKeyGroupModal from '@/components/ApiKeyGroupModal';
-import type { ApiKeyGroupResponse, LoadBalanceStrategy, ApiKeyGroup } from '@/services/api';
+import type { ApiKeyGroupResponse, ApiKeyGroup } from '@/services/api';
 
 export default function ApiKeyGroupsPage() {
   const [groups, setGroups] = useState<ApiKeyGroupResponse[]>([]);
@@ -31,7 +31,20 @@ export default function ApiKeyGroupsPage() {
   const fetchGroups = async () => {
     try {
       const groupsResponse = await apiService.getApiKeyGroups();
-      setGroups(Array.isArray(groupsResponse) ? groupsResponse : []);
+      const responseAsApiKeyGroupResponse: ApiKeyGroupResponse[] = (groupsResponse || []).map(group => ({
+        ...group,
+        // Ensure all required ApiKeyGroupResponse properties are present
+        healthStatus: group.healthStatus || 'unknown',
+        loadBalanceStrategy: typeof group.loadBalanceStrategy === 'string' ? group.loadBalanceStrategy : 'RoundRobin',
+        failoverStrategy: typeof group.failoverStrategy === 'string' ? group.failoverStrategy : undefined,
+        isEnabled: group.isEnabled ?? true,
+        totalApiKeys: group.totalApiKeys ?? 0,
+        activeApiKeys: group.activeApiKeys ?? 0,
+        healthCheckInterval: group.healthCheckIntervalMs ? Math.round(group.healthCheckIntervalMs / 1000) : 60,
+        createdAt: group.createdAt || new Date().toISOString(),
+        updatedAt: group.updatedAt || new Date().toISOString()
+      }));
+      setGroups(responseAsApiKeyGroupResponse);
     } catch (error) {
       console.error('Failed to fetch API key groups:', error);
     } finally {
@@ -338,7 +351,7 @@ export default function ApiKeyGroupsPage() {
                   )}
 
                   {/* 健康检查配置 */}
-                  {group.healthCheckInterval > 0 && (
+                  {(group.healthCheckInterval ?? 0) > 0 && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm text-muted-foreground">健康检查间隔</Label>

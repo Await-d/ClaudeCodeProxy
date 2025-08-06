@@ -51,9 +51,9 @@ export default function ApiKeyGroupModal({ open, onClose, editingGroup, onSucces
         name: editingGroup.name || '',
         description: editingGroup.description || '',
         tags: editingGroup.tags || [],
-        loadBalanceStrategy: typeof editingGroup.loadBalanceStrategy === 'string' ? 
+        loadBalanceStrategy: (typeof editingGroup.loadBalanceStrategy === 'string' ? 
           parseInt(editingGroup.loadBalanceStrategy) || 0 : 
-          editingGroup.loadBalanceStrategy || 0,
+          editingGroup.loadBalanceStrategy || 0) as LoadBalanceStrategy,
         failoverEnabled: editingGroup.failoverEnabled || false,
         healthCheckEnabled: editingGroup.healthCheckEnabled || false,
         healthCheckIntervalMs: editingGroup.healthCheckIntervalMs || 60000,

@@ -125,36 +125,42 @@ export interface ApiKeyMetric {
 /**
  * 负载均衡策略枚举
  */
-export enum LoadBalanceStrategy {
-  RoundRobin = 0,
-  Weighted = 1,
-  LeastConnections = 2,
-  Random = 3,
-  Hash = 4,
-  FastestResponse = 5
-}
+export const LoadBalanceStrategy = {
+  RoundRobin: 0,
+  Weighted: 1,
+  LeastConnections: 2,
+  Random: 3,
+  Hash: 4,
+  FastestResponse: 5
+} as const;
+
+export type LoadBalanceStrategy = typeof LoadBalanceStrategy[keyof typeof LoadBalanceStrategy];
 
 /**
  * 故障转移策略枚举
  */
-export enum FailoverStrategy {
-  Failover = 0,
-  FailFast = 1,
-  Retry = 2,
-  CircuitBreaker = 3
-}
+export const FailoverStrategy = {
+  Failover: 0,
+  FailFast: 1,
+  Retry: 2,
+  CircuitBreaker: 3
+} as const;
+
+export type FailoverStrategy = typeof FailoverStrategy[keyof typeof FailoverStrategy];
 
 /**
  * 健康状态枚举
  */
-export enum HealthStatus {
-  Unknown = 'unknown',
-  Healthy = 'healthy',
-  Unhealthy = 'unhealthy',
-  Degraded = 'degraded',
-  Warning = 'warning',
-  Critical = 'critical'
-}
+export const HealthStatus = {
+  Unknown: 'unknown',
+  Healthy: 'healthy',
+  Unhealthy: 'unhealthy',
+  Degraded: 'degraded',
+  Warning: 'warning',
+  Critical: 'critical'
+} as const;
+
+export type HealthStatus = typeof HealthStatus[keyof typeof HealthStatus];
 
 /**
  * 分组健康状态别名

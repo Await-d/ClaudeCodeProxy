@@ -34,8 +34,7 @@ import type {
   CostDataResponse, 
   UptimeResponse, 
   TrendDataPoint, 
-  ApiKeyGroupsOverviewResponse,
-  BatchHealthCheckResponse 
+  ApiKeyGroupsOverviewResponse
 } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 import GroupPerformanceChart from '@/components/charts/GroupPerformanceChart';
@@ -52,7 +51,6 @@ export default function DashboardPage() {
   
   // API Key Groups 相关状态
   const [groupsOverview, setGroupsOverview] = useState<ApiKeyGroupsOverviewResponse | null>(null);
-  const [batchHealthCheck, setBatchHealthCheck] = useState<BatchHealthCheckResponse | null>(null);
 
   // 主题感知的图表颜色
   const chartColors = {
@@ -100,12 +98,8 @@ export default function DashboardPage() {
 
         // 获取分组相关数据
         try {
-          const [overview, healthCheck] = await Promise.all([
-            apiService.getApiKeyGroupsOverview().catch(() => null),
-            apiService.batchGroupHealthCheck().catch(() => null)
-          ]);
+          const overview = await apiService.getApiKeyGroupsOverview().catch(() => null);
           setGroupsOverview(overview);
-          setBatchHealthCheck(healthCheck);
         } catch (groupErr) {
           console.error('Failed to fetch groups data:', groupErr);
         }

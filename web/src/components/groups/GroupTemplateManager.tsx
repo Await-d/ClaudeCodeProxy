@@ -15,7 +15,7 @@ import {
   DialogFooter 
 } from '@/components/ui/dialog';
 import { 
-  FileTemplate, 
+   
   Plus, 
   Edit, 
   Trash2, 
@@ -122,7 +122,12 @@ function TemplateForm({ template, isOpen, onClose, onSave }: TemplateFormProps) 
       setFormData({
         name: template.name,
         description: template.description || '',
-        config: { ...template.config }
+        config: { 
+          ...template.config,
+          tags: template.config.tags || [],
+          groupCostLimit: template.config.groupCostLimit || undefined,
+          groupRequestLimit: template.config.groupRequestLimit || undefined,
+        }
       });
     } else {
       setFormData({
@@ -418,7 +423,7 @@ function TemplateCard({
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center space-x-2">
-            <FileTemplate className="h-5 w-5 text-primary" />
+            <FileText className="h-5 w-5 text-primary" />
             <span>{template.name}</span>
           </CardTitle>
           <div className="flex items-center space-x-1">
@@ -569,7 +574,7 @@ export default function GroupTemplateManager({
       {/* 操作按钮 */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold flex items-center space-x-2">
-          <FileTemplate className="h-5 w-5" />
+          <FileText className="h-5 w-5" />
           <span>分组模板</span>
           <Badge variant="secondary">{templates.length}</Badge>
         </h2>
@@ -592,7 +597,7 @@ export default function GroupTemplateManager({
       {templates.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileTemplate className="h-12 w-12 text-muted-foreground mb-4" />
+            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">暂无模板</h3>
             <p className="text-muted-foreground text-center mb-4">
               创建模板可以快速配置具有相同设置的分组

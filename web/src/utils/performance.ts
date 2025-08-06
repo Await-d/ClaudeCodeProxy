@@ -183,7 +183,7 @@ interface PerformanceState {
 }
 
 const usePerformanceStore = create<PerformanceState>()(
-  subscribeWithSelector((set, get) => ({
+  subscribeWithSelector(() => ({
     renderTimes: new Map(),
     memoryUsage: 0,
     componentCounts: new Map(),
@@ -505,7 +505,6 @@ export function generatePerformanceReport(): {
   metrics: Record<string, unknown>;
   timestamp: string;
 } {
-  const monitor = PerformanceMonitor.getInstance();
   const state = usePerformanceStore.getState();
 
   return {

@@ -3,9 +3,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Key, TrendingUp, Users, DollarSign, Layers } from 'lucide-react';
-import { apiService, type ApiKeysTrendRequest, type ApiKeysTrendResponse, type ApiKeyGroup } from '@/services/api';
+
+import { Key, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { apiService, type ApiKeysTrendRequest, type ApiKeysTrendResponse } from '@/services/api';
 
 interface ApiKeyUsageChartProps {
   className?: string;
@@ -23,10 +23,9 @@ export default function ApiKeyUsageChart({ className }: ApiKeyUsageChartProps) {
   const [granularity, setGranularity] = useState<'day' | 'hour'>('day');
   const [dateRange, setDateRange] = useState('7days');
   const [chartType, setChartType] = useState<'bar' | 'line' | 'stacked'>('stacked');
-  const [showGroupInfo, setShowGroupInfo] = useState(true);
-  const [selectedGroup, setSelectedGroup] = useState<string>('all');
-  const [groups, setGroups] = useState<ApiKeyGroup[]>([]);
-  const [apiKeysWithGroups, setApiKeysWithGroups] = useState<any[]>([]);
+  const [showGroupInfo] = useState(true);
+  const [selectedGroup] = useState<string>('all');
+
 
   const fetchApiKeysTrend = async () => {
     try {
@@ -43,28 +42,7 @@ export default function ApiKeyUsageChart({ className }: ApiKeyUsageChartProps) {
 
       const trendData = await apiService.getApiKeysTrend(request);
       
-      // 如果显示分组信息，为每个API Key添加分组信息
-      if (showGroupInfo && trendData.topApiKeys) {
-        const enrichedApiKeys = await Promise.all(
-          trendData.topApiKeys.map(async (apiKey) => {
-            try {
-              // 获取API Key详情，包括分组信息
-              const apiKeyDetail = await apiService.getApiKeys().then(keys => 
-                keys.find(k => k.id === apiKey.id)
-              );
-              return {
-                ...apiKey,
-                groupInfo: apiKeyDetail?.groupIds || [],
-                groupNames: apiKeyDetail?.groupIds ? 
-                  groups.filter(g => apiKeyDetail.groupIds?.includes(g.id)).map(g => g.name) : []
-              };
-            } catch (error) {
-              return { ...apiKey, groupInfo: [], groupNames: [] };
-            }
-          })
-        );
-        setApiKeysWithGroups(enrichedApiKeys);
-      }
+      // Note: Group enrichment logic removed as it was unused
 
       setData(trendData);
     } catch (error) {
@@ -74,23 +52,13 @@ export default function ApiKeyUsageChart({ className }: ApiKeyUsageChartProps) {
     }
   };
 
-  const fetchGroups = async () => {
-    try {
-      const groupsResult = await apiService.getApiKeyGroups();
-      const groupsList = Array.isArray(groupsResult) ? groupsResult : groupsResult.data || [];
-      setGroups(groupsList);
-    } catch (error) {
-      console.error('获取分组列表失败:', error);
-    }
-  };
+
 
   useEffect(() => {
     fetchApiKeysTrend();
   }, [metric, granularity, dateRange, showGroupInfo, selectedGroup]);
 
-  useEffect(() => {
-    fetchGroups();
-  }, []);
+
 
   const formatValue = (value: number) => {
     if (value >= 1000000) {
@@ -106,16 +74,18 @@ export default function ApiKeyUsageChart({ className }: ApiKeyUsageChartProps) {
 
     return data.data.map(item => {
       const result: Record<string, string | number> = {
-        name: item.label || item.date || item.hour,
+        name: (item as any).label || (item as any).date || (item as any).hour || 'Unknown',
         total: 0
       };
 
       // 为每个API Key添加数据
-      Object.entries(item.apiKeys).forEach(([, keyData]: [string, Record<string, number>]) => {
-        const value = metric === 'requests' ? keyData.requests : keyData.tokens;
-        result[keyData.name] = value;
-        result.total += value;
-      });
+      if ((item as any).apiKeys) {
+        Object.entries((item as any).apiKeys as Record<string, any>).forEach(([keyName, keyData]) => {
+          const value = metric === 'requests' ? (keyData as any)?.requests || 0 : (keyData as any)?.tokens || 0;
+          result[keyName] = value;
+          (result.total as number) += value;
+        });
+      }
 
       return result;
     });
@@ -306,7 +276,7 @@ export default function ApiKeyUsageChart({ className }: ApiKeyUsageChartProps) {
                   <span className="text-sm text-muted-foreground">总{metric === 'requests' ? '请求' : 'Token'}</span>
                 </div>
                 <div className="text-lg font-semibold">
-                  {formatValue(chartData.reduce((sum, d) => sum + (d.total || 0), 0))}
+                  {formatValue(chartData.reduce((sum, d) => sum + (Number(d.total) || 0), 0))}
                 </div>
               </div>
               <div className="text-center">
@@ -315,7 +285,7 @@ export default function ApiKeyUsageChart({ className }: ApiKeyUsageChartProps) {
                   <span className="text-sm text-muted-foreground">平均每天</span>
                 </div>
                 <div className="text-lg font-semibold">
-                  {formatValue(chartData.length > 0 ? chartData.reduce((sum, d) => sum + (d.total || 0), 0) / chartData.length : 0)}
+                  {formatValue(chartData.length > 0 ? chartData.reduce((sum, d) => sum + (Number(d.total) || 0), 0) / chartData.length : 0)}
                 </div>
               </div>
             </div>

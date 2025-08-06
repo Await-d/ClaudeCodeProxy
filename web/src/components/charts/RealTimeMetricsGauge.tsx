@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Zap, CheckCircle, Users, Shield } from 'lucide-react';
 import { apiService } from '@/services/api';
-import type { ApiKeyGroupsOverviewResponse, BatchHealthCheckResponse } from '@/services/api';
+import type { ApiKeyGroupsOverviewResponse } from '@/services/api';
 
 interface GaugeProps {
   value: number;
@@ -14,7 +14,7 @@ interface GaugeProps {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-function Gauge({ value, max, title, unit, color, icon: Icon }: GaugeProps) {
+const Gauge: React.FC<GaugeProps> = ({ value, max, title, unit, color, icon: Icon }) => {
   const percentage = Math.min((value / max) * 100, 100);
   const strokeDasharray = `${percentage * 2.83} 283`;
   
@@ -58,7 +58,7 @@ function Gauge({ value, max, title, unit, color, icon: Icon }: GaugeProps) {
       </div>
     </div>
   );
-}
+};
 
 interface RealTimeMetricsGaugeProps {
   className?: string;
@@ -202,7 +202,7 @@ export default function RealTimeMetricsGauge({ className }: RealTimeMetricsGauge
                 title="负载均衡效率"
                 unit="%"
                 color="#8b5cf6"
-                icon={Gauge}
+                icon={Activity}
               />
               <Gauge
                 value={metrics.groupResponseTime}
