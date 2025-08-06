@@ -22,6 +22,8 @@ RUN dotnet publish "./ClaudeCodeProxy.Host.csproj" -c $BUILD_CONFIGURATION -o /a
 
 FROM base AS final
 WORKDIR /app
+# Create data directory for SQLite database
+RUN mkdir -p /app/data && chown $APP_UID:$APP_GID /app/data
 COPY --from=publish /app/publish .
 # Copy pre-built frontend files from web/dist directory
 COPY web/dist ./wwwroot
