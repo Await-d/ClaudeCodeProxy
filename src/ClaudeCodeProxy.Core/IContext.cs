@@ -9,6 +9,10 @@ public interface IContext
 
     DbSet<ApiKey> ApiKeys { get; set; }
     
+    DbSet<ApiKeyGroup> ApiKeyGroups { get; set; }
+    
+    DbSet<ApiKeyGroupMapping> ApiKeyGroupMappings { get; set; }
+    
     public DbSet<RequestLog> RequestLogs { get; set; }
     
     public DbSet<StatisticsSnapshot> StatisticsSnapshots { get; set; }

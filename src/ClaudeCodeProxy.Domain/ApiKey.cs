@@ -143,8 +143,92 @@ public class ApiKey : Entity<Guid>
     /// <summary>
     /// 服务类型
     /// </summary>
-    /// <returns></returns>
     public string Service { get; set; } = "claude";
+
+    /// <summary>
+    /// 所属分组ID列表（一个API Key可以属于多个分组）
+    /// </summary>
+    public List<Guid>? GroupIds { get; set; }
+
+    /// <summary>
+    /// 是否为分组管理模式
+    /// </summary>
+    public bool IsGroupManaged { get; set; } = false;
+
+    /// <summary>
+    /// 分组内的优先级
+    /// </summary>
+    public int GroupPriority { get; set; } = 50;
+
+    /// <summary>
+    /// 分组中的权重
+    /// </summary>
+    public int GroupWeight { get; set; } = 1;
+
+    /// <summary>
+    /// 在分组中的顺序
+    /// </summary>
+    public int GroupOrder { get; set; } = 0;
+
+    /// <summary>
+    /// 是否为分组中的主Key
+    /// </summary>
+    public bool IsGroupPrimary { get; set; } = false;
+
+    /// <summary>
+    /// 分组健康状态：healthy, unhealthy, unknown
+    /// </summary>
+    public string GroupHealthStatus { get; set; } = "unknown";
+
+    /// <summary>
+    /// 分组中的使用次数
+    /// </summary>
+    public long GroupUsageCount { get; set; } = 0;
+
+    /// <summary>
+    /// 分组中的成功次数
+    /// </summary>
+    public long GroupSuccessfulRequests { get; set; } = 0;
+
+    /// <summary>
+    /// 分组中的失败次数
+    /// </summary>
+    public long GroupFailedRequests { get; set; } = 0;
+
+    /// <summary>
+    /// 分组中的平均响应时间
+    /// </summary>
+    public double GroupAverageResponseTime { get; set; } = 0;
+
+    /// <summary>
+    /// 分组中的总费用
+    /// </summary>
+    public decimal GroupTotalCost { get; set; } = 0;
+
+    /// <summary>
+    /// 分组连续失败次数
+    /// </summary>
+    public int GroupConsecutiveFailures { get; set; } = 0;
+
+    /// <summary>
+    /// 分组当前连接数
+    /// </summary>
+    public int GroupCurrentConnections { get; set; } = 0;
+
+    /// <summary>
+    /// 分组最后使用时间
+    /// </summary>
+    public DateTime? GroupLastUsedAt { get; set; }
+
+    /// <summary>
+    /// 分组最后健康检查时间
+    /// </summary>
+    public DateTime? GroupLastHealthCheckAt { get; set; }
+
+    /// <summary>
+    /// 分组禁用截止时间
+    /// </summary>
+    public DateTime? GroupDisabledUntil { get; set; }
 
     public bool IsClaude()
     {

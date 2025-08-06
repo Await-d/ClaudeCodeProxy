@@ -122,7 +122,7 @@ public class ApiKeyGroup : Entity<Guid>
                 ? (double)Statistics.TotalRequests / GroupRequestLimit.Value 
                 : 0,
             CostUsage = GroupCostLimit.HasValue && Statistics?.TotalCost > 0 
-                ? (double)Statistics.TotalCost / GroupCostLimit.Value 
+                ? (double)Statistics.TotalCost / (double)GroupCostLimit.Value 
                 : 0,
             TotalRequests = Statistics?.TotalRequests ?? 0,
             TotalCost = Statistics?.TotalCost ?? 0,

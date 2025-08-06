@@ -409,6 +409,130 @@ public class AccountsService(IContext context, IMemoryCache memoryCache, ILogger
     }
 
     /// <summary>
+    /// 根据API Key的分组配置选择账户（支持分组管理）
+    /// </summary>
+    /// <param name="apiKeyValue">API Key值</param>
+    /// <param name="sessionHash">会话哈希</param>
+    /// <param name="requestedModel">请求的模型</param>
+    /// <param name="apiKeyGroupService">API Key分组服务</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>选中的账户</returns>
+    public async Task<Accounts?> SelectAccountForApiKeyWithGroup(ApiKey apiKeyValue, string sessionHash,
+        string? requestedModel = null, IApiKeyGroupService? apiKeyGroupService = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // 如果API Key启用了分组管理且提供了分组服务
+            if (apiKeyValue.IsGroupManaged && apiKeyGroupService != null && apiKeyValue.GroupIds.Count > 0)
+            {
+                logger.LogInformation("🔄 API Key {ApiKeyName} 启用分组管理，尝试使用分组选择策略", apiKeyValue.Name);
+
+                // 遍历API Key所属的分组，按优先级选择
+                foreach (var groupId in apiKeyValue.GroupIds.OrderBy(x => x))
+                {
+                    try
+                    {
+                        var selectedApiKey = await apiKeyGroupService.SelectApiKeyFromGroupAsync(
+                            groupId, cancellationToken);
+
+                        if (selectedApiKey != null)
+                        {
+                            // 使用选中的API Key获取对应的账户
+                            var account = await GetAccountForApiKeyAsync(selectedApiKey, cancellationToken);
+                            if (account != null && await IsAccountAvailableAsync(account, cancellationToken))
+                            {
+                                logger.LogInformation(
+                                    "🎯 通过分组 {GroupId} 选择账户: {AccountName} ({AccountId}) for API key {ApiKeyName}",
+                                    groupId, account.Name, account.Id, apiKeyValue.Name);
+
+                                await UpdateLastUsedAsync(account.Id, cancellationToken);
+                                
+                                // 更新分组统计
+                                await UpdateGroupUsageStatsAsync(selectedApiKey, true, apiKeyGroupService, cancellationToken);
+                                
+                                return account;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning("⚠️ 分组 {GroupId} 选择失败: {Error}，尝试下一个分组", groupId, ex.Message);
+                        continue;
+                    }
+                }
+
+                logger.LogWarning("⚠️ 所有分组都无法提供可用账户，回退到传统选择算法");
+            }
+
+            // 如果分组选择失败或未启用分组管理，使用传统算法
+            return await SelectAccountForApiKey(apiKeyValue, sessionHash, requestedModel, cancellationToken);
+        }
+        catch (Exception error)
+        {
+            logger.LogError(error, "❌ 为API key选择账户失败（分组增强版）");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 根据API Key获取对应的账户
+    /// </summary>
+    private async Task<Accounts?> GetAccountForApiKeyAsync(ApiKey apiKey, CancellationToken cancellationToken = default)
+    {
+        // 优先使用绑定的专属账户
+        if (!string.IsNullOrEmpty(apiKey.ClaudeAccountId))
+        {
+            var account = await GetAccountByIdAsync(apiKey.ClaudeAccountId, cancellationToken);
+            if (account != null) return account;
+        }
+
+        if (!string.IsNullOrEmpty(apiKey.ClaudeConsoleAccountId))
+        {
+            var account = await GetAccountByIdAsync(apiKey.ClaudeConsoleAccountId, cancellationToken);
+            if (account != null) return account;
+        }
+
+        if (!string.IsNullOrEmpty(apiKey.GeminiAccountId))
+        {
+            var account = await GetAccountByIdAsync(apiKey.GeminiAccountId, cancellationToken);
+            if (account != null) return account;
+        }
+
+        // 如果没有绑定专属账户，返回null让上层处理
+        return null;
+    }
+
+    /// <summary>
+    /// 更新分组使用统计
+    /// </summary>
+    private async Task UpdateGroupUsageStatsAsync(ApiKey apiKey, bool success, 
+        IApiKeyGroupService apiKeyGroupService, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            foreach (var groupId in apiKey.GroupIds)
+            {
+                var groupGuid = groupId; // groupId is already Guid type
+                
+                if (success)
+                {
+                    await apiKeyGroupService.RecordSuccessAsync(apiKey.Id, groupGuid, 0, 0, cancellationToken);
+                }
+                else
+                {
+                    await apiKeyGroupService.RecordFailureAsync(apiKey.Id, groupGuid, "Account not available", cancellationToken);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("⚠️ 更新分组统计失败: {Error}", ex.Message);
+            // 不抛出异常，允许主流程继续
+        }
+    }
+
+    /// <summary>
     /// 检查账户是否可用
     /// </summary>
     private async Task<bool> IsAccountAvailableAsync(Accounts account, CancellationToken cancellationToken = default)
