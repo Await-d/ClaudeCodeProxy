@@ -143,10 +143,22 @@ public static class Program
             return;
         }
 
+        // 确保数据目录存在
+        var dbPath = app.Configuration.GetValue<string>("ConnectionStrings:DefaultConnection");
+        if (!string.IsNullOrEmpty(dbPath))
+        {
+            var dataSource = dbPath.Split(';')[0].Replace("Data Source=", "").Trim();
+            var dbDirectory = Path.GetDirectoryName(dataSource);
+            if (!string.IsNullOrEmpty(dbDirectory) && !Directory.Exists(dbDirectory))
+            {
+                Directory.CreateDirectory(dbDirectory);
+                Log.Information("创建数据库目录: {DbDirectory}", dbDirectory);
+            }
+        }
+
         await using var scope = app.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
-        await dbContext.EnsureCreatedAsync();
-        // 执行数据库迁移
+        // 执行数据库迁移（EnsureCreatedAsync 在 MigrateAsync 方法内部调用）
         await dbContext.MigrateAsync();
     }
 
