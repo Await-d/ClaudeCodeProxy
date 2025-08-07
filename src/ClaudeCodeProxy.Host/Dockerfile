@@ -1,9 +1,5 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-<<<<<<< HEAD
-USER $APP_UID
-=======
 USER root
->>>>>>> upstream/main
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo "Asia/Shanghai" > /etc/timezone
 WORKDIR /app

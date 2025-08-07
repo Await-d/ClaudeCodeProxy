@@ -149,10 +149,6 @@ public class ApiKey : Entity<Guid>
     /// </summary>
     public string Service { get; set; } = "claude";
 
-    /// <summary>
-    /// 关联用户ID
-    /// </summary>
-    public Guid UserId { get; set; }
 
     /// <summary>
     /// 所属分组ID列表（一个API Key可以属于多个分组）

@@ -138,18 +138,6 @@ public static class Program
 
     private static async Task MigrateDatabaseAsync(WebApplication app)
     {
-        // 获取配置，判断是否需要迁移
-        var runMigrationsAtStartup = app.Configuration.GetValue<bool>("RunMigrationsAtStartup");
-
-        await using var scope = app.Services.CreateAsyncScope();
-        if (runMigrationsAtStartup)
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
-
-            await dbContext.MigrateAsync();
-        }
-
-<<<<<<< HEAD
         // 确保数据目录存在
         var dbPath = app.Configuration.GetValue<string>("ConnectionStrings:DefaultConnection");
         if (!string.IsNullOrEmpty(dbPath))
@@ -163,15 +151,21 @@ public static class Program
             }
         }
 
-        await using var scope = app.Services.CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
-        // 执行数据库迁移（EnsureCreatedAsync 在 MigrateAsync 方法内部调用）
-        await dbContext.MigrateAsync();
-=======
+        // 获取配置，判断是否需要迁移
+        var runMigrationsAtStartup = app.Configuration.GetValue<bool>("RunMigrationsAtStartup");
 
+        await using var scope = app.Services.CreateAsyncScope();
+        
+        // 使用数据库初始化服务
         var dbInitService = scope.ServiceProvider.GetRequiredService<DatabaseInitializationService>();
         await dbInitService.InitializeAsync();
->>>>>>> upstream/main
+        
+        // 执行数据库迁移（如果需要）
+        if (runMigrationsAtStartup)
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
+            await dbContext.MigrateAsync();
+        }
     }
 
     private static async Task InitializeModelPricingAsync(WebApplication app)
