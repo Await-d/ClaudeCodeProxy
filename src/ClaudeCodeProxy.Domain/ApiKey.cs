@@ -6,6 +6,10 @@
 public class ApiKey : Entity<Guid>
 {
     /// <summary>
+    /// 用户ID - 每个API Key都属于一个用户
+    /// </summary>
+    public Guid UserId { get; set; }
+    /// <summary>
     /// API Key 名称
     /// </summary>
     public string Name { get; set; } = string.Empty;
@@ -145,6 +149,7 @@ public class ApiKey : Entity<Guid>
     /// </summary>
     public string Service { get; set; } = "claude";
 
+
     /// <summary>
     /// 所属分组ID列表（一个API Key可以属于多个分组）
     /// </summary>
@@ -230,6 +235,16 @@ public class ApiKey : Entity<Guid>
     /// </summary>
     public DateTime? GroupDisabledUntil { get; set; }
 
+    /// <summary>
+    /// 导航属性 - 关联用户
+    /// </summary>
+    public virtual User User { get; set; } = null!;
+
+    /// <summary>
+    /// 导航属性 - 关联的请求日志
+    /// </summary>
+    public virtual ICollection<RequestLog> RequestLogs { get; set; } = new List<RequestLog>();
+
     public bool IsClaude()
     {
         return Service.Equals("claude", StringComparison.OrdinalIgnoreCase);
@@ -250,7 +265,7 @@ public class ApiKey : Entity<Guid>
     /// </summary>
     public bool IsValid()
     {
-        return IsEnabled && (ExpiresAt == null || ExpiresAt > DateTime.UtcNow);
+        return IsEnabled && (ExpiresAt == null || ExpiresAt > DateTime.Now);
     }
 
     /// <summary>

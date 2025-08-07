@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using ClaudeCodeProxy.Abstraction.Chats;
 using ClaudeCodeProxy.Host.Env;
 using ClaudeCodeProxy.Host.Services;
@@ -15,6 +16,8 @@ using Microsoft.EntityFrameworkCore.Sqlite;
 using Scalar.AspNetCore;
 using Serilog;
 using System.Runtime.InteropServices;
+using ClaudeCodeProxy.Host.Middlewares;
+using Mapster;
 
 namespace ClaudeCodeProxy.Host;
 
@@ -135,14 +138,6 @@ public static class Program
 
     private static async Task MigrateDatabaseAsync(WebApplication app)
     {
-        // 获取配置，判断是否需要迁移
-        var runMigrationsAtStartup = app.Configuration.GetValue<bool>("RunMigrationsAtStartup");
-
-        if (!runMigrationsAtStartup)
-        {
-            return;
-        }
-
         // 确保数据目录存在
         var dbPath = app.Configuration.GetValue<string>("ConnectionStrings:DefaultConnection");
         if (!string.IsNullOrEmpty(dbPath))
@@ -156,10 +151,21 @@ public static class Program
             }
         }
 
+        // 获取配置，判断是否需要迁移
+        var runMigrationsAtStartup = app.Configuration.GetValue<bool>("RunMigrationsAtStartup");
+
         await using var scope = app.Services.CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
-        // 执行数据库迁移（EnsureCreatedAsync 在 MigrateAsync 方法内部调用）
-        await dbContext.MigrateAsync();
+        
+        // 使用数据库初始化服务
+        var dbInitService = scope.ServiceProvider.GetRequiredService<DatabaseInitializationService>();
+        await dbInitService.InitializeAsync();
+        
+        // 执行数据库迁移（如果需要）
+        if (runMigrationsAtStartup)
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
+            await dbContext.MigrateAsync();
+        }
     }
 
     private static async Task InitializeModelPricingAsync(WebApplication app)
@@ -168,7 +174,7 @@ public static class Program
         {
             await using var scope = app.Services.CreateAsyncScope();
             var initService = scope.ServiceProvider.GetRequiredService<ModelPricingInitService>();
-            
+
             // 初始化模型定价数据
             await initService.InitializeModelPricingAsync();
         }
@@ -222,7 +228,16 @@ public static class Program
                 System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
         });
 
-        services.AddHttpClient();
+        services.AddHttpClient()
+            .ConfigureHttpClientDefaults((builder =>
+            {
+                builder.ConfigureHttpClient((client =>
+                {
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("ClaudeCodeProxy/1.0");
+                }));
+            }));
+
+        services.AddSingleton<GlobalMiddleware>();
         services.AddMemoryCache();
 
         services.AddScoped<OAuthHelper>();
@@ -234,6 +249,14 @@ public static class Program
         // 注册服务
         services.AddScoped<ApiKeyService>();
         services.AddScoped<AuthService>();
+        services.AddScoped<UserService>();
+        services.AddScoped<RoleService>();
+        services.AddScoped<OAuthService>();
+        services.AddScoped<WalletService>();
+        services.AddScoped<RequestLogService>();
+        services.AddScoped<RedeemCodeService>();
+        services.AddScoped<IInvitationService, InvitationService>();
+        services.AddScoped<DatabaseInitializationService>();
         services.AddScoped<AccountsService>();
         services.AddScoped<ClaudeProxyService>();
         services.AddScoped<StatisticsService>();
@@ -246,6 +269,8 @@ public static class Program
         services.AddScoped<MessageService>();
 
         services.AddCoreServices();
+        
+        services.AddMapster();
 
         // 添加全局过滤器
         services.AddScoped<GlobalResponseFilter>();
@@ -279,6 +304,8 @@ public static class Program
             app.MapScalarApiReference("/scalar");
         }
 
+        app.UseMiddleware<GlobalMiddleware>();
+
         // 添加CORS支持（如果需要）
         app.UseCors(policy =>
         {
@@ -302,9 +329,17 @@ public static class Program
         // 配置API端点
         app.MapApiKeyEndpoints();
         app.MapAccountEndpoints();
+        app.MapUserEndpoints();
+        app.MapRoleEndpoints();
+        app.MapOAuthEndpoints();
+        app.MapWalletEndpoints();
+        app.MapRequestLogEndpoints();
+        app.MapProfileEndpoints();
         app.MapMessageEndpoints();
         app.MapAuthEndpoints();
         app.MapClaudeProxyEndpoints();
+        app.MapRedeemCodeEndpoints();
+        app.MapInvitationEndpoints();
         app.MapDashboardEndpoints();
         app.MapPricingEndpoints();
         app.MapVersionEndpoints();
@@ -312,7 +347,7 @@ public static class Program
         app.MapApiKeyAccountPermissionEndpoints();
 
         // 健康检查端点
-        app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }))
+        app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.Now }))
             .WithName("HealthCheck")
             .WithSummary("健康检查")
             .WithTags("System");
@@ -331,7 +366,7 @@ public static class Program
                     WorkingDirectory = Environment.CurrentDirectory,
                     MachineName = Environment.MachineName,
                     UserName = Environment.UserName,
-                    Timestamp = DateTime.UtcNow
+                    Timestamp = DateTime.Now
                 };
                 return Results.Ok(info);
             })
