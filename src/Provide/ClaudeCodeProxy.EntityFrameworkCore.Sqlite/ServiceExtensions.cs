@@ -18,7 +18,12 @@ public static class ServiceExtensions
     {
         // Register the DbContext with SQLite provider
         services.AddDbContext<IContext,SqliteDbContext>(options =>
-            options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+        {
+            options.UseSqlite(configuration.GetConnectionString("DefaultConnection"));
+            // Ignore pending model changes warning temporarily
+            options.ConfigureWarnings(warnings =>
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        });
 
         return services;
     }

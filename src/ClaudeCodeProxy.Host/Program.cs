@@ -156,16 +156,24 @@ public static class Program
 
         await using var scope = app.Services.CreateAsyncScope();
         
-        // 使用数据库初始化服务
-        var dbInitService = scope.ServiceProvider.GetRequiredService<DatabaseInitializationService>();
-        await dbInitService.InitializeAsync();
-        
         // 执行数据库迁移（如果需要）
         if (runMigrationsAtStartup)
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
-            await dbContext.MigrateAsync();
+            try
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
+                await dbContext.MigrateAsync();
+            }
+            catch (Exception ex) when (ex.Message.Contains("already exists"))
+            {
+                // 如果表已经存在，跳过迁移
+                Console.WriteLine("数据库表已存在，跳过迁移");
+            }
         }
+        
+        // 使用数据库初始化服务（在迁移之后）
+        var dbInitService = scope.ServiceProvider.GetRequiredService<DatabaseInitializationService>();
+        await dbInitService.InitializeAsync();
     }
 
     private static async Task InitializeModelPricingAsync(WebApplication app)

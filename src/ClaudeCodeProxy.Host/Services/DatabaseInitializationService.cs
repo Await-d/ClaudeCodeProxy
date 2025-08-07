@@ -1,5 +1,6 @@
 using ClaudeCodeProxy.Core;
 using ClaudeCodeProxy.Domain;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -23,6 +24,13 @@ public class DatabaseInitializationService(
         {
             logger.LogInformation("开始初始化数据库...");
 
+            // 检查数据库表是否存在
+            if (!await TablesExistAsync())
+            {
+                logger.LogWarning("数据库表不存在，跳过初始化。请确保数据库迁移已执行。");
+                return;
+            }
+
             // 初始化默认角色
             await InitializeRolesAsync();
 
@@ -35,6 +43,24 @@ public class DatabaseInitializationService(
         {
             logger.LogError(ex, "数据库初始化失败");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 检查必要的数据库表是否存在
+    /// </summary>
+    private async Task<bool> TablesExistAsync()
+    {
+        try
+        {
+            // 尝试查询 Roles 表以检查其是否存在
+            await context.Roles.FirstOrDefaultAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "检查数据库表时出现异常，表可能不存在");
+            return false;
         }
     }
 
