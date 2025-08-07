@@ -1,9 +1,16 @@
 import React from 'react'
-import { render, RenderOptions } from '@testing-library/react'
+import { render, type RenderOptions, fireEvent } from '@testing-library/react'
+import { vi } from 'vitest'
 import { BrowserRouter } from 'react-router-dom'
-import { AuthProvider } from '@/contexts/AuthContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ToastProvider } from '@/contexts/ToastContext'
+
+// Mock AuthContext for testing
+const MockAuthContext = React.createContext<any>(null)
+
+const MockAuthProvider: React.FC<{ children: React.ReactNode; value: any }> = ({ children, value }) => (
+  <MockAuthContext.Provider value={value}>{children}</MockAuthContext.Provider>
+)
 
 // Mock API响应数据
 export const mockApiKeyPermission = {
@@ -54,8 +61,9 @@ export const createMockAuthContext = (isAuthenticated = true, user = mockUser) =
   user,
   login: vi.fn(),
   logout: vi.fn(),
-  token: isAuthenticated ? 'mock-token' : null,
-  loading: false
+  loading: false,
+  hasPermission: vi.fn().mockReturnValue(true),
+  hasRole: vi.fn().mockReturnValue(true)
 })
 
 // 创建完整的测试渲染器
@@ -65,11 +73,11 @@ const AllTheProviders: React.FC<{ children: React.ReactNode }> = ({ children }) 
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AuthProvider value={mockAuthValue}>
+        <MockAuthProvider value={mockAuthValue}>
           <ToastProvider>
             {children}
           </ToastProvider>
-        </AuthProvider>
+        </MockAuthProvider>
       </ThemeProvider>
     </BrowserRouter>
   )
@@ -92,11 +100,11 @@ export const renderWithAuth = (
     return (
       <BrowserRouter>
         <ThemeProvider>
-          <AuthProvider value={mockAuthValue}>
+          <MockAuthProvider value={mockAuthValue}>
             <ToastProvider>
               {children}
             </ToastProvider>
-          </AuthProvider>
+          </MockAuthProvider>
         </ThemeProvider>
       </BrowserRouter>
     )
@@ -148,18 +156,15 @@ export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0))
 
 // 模拟用户输入
 export const mockUserInput = {
-  type: async (element: HTMLElement, text: string) => {
-    const { fireEvent } = await import('@testing-library/react')
+  type: (element: HTMLElement, text: string) => {
     fireEvent.change(element, { target: { value: text } })
   },
   
-  click: async (element: HTMLElement) => {
-    const { fireEvent } = await import('@testing-library/react')
+  click: (element: HTMLElement) => {
     fireEvent.click(element)
   },
   
-  submit: async (form: HTMLFormElement) => {
-    const { fireEvent } = await import('@testing-library/react')
+  submit: (form: HTMLFormElement) => {
     fireEvent.submit(form)
   }
 }
