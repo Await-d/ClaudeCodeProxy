@@ -163,11 +163,24 @@ public static class Program
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<IContext>();
                 await dbContext.MigrateAsync();
+                Log.Information("数据库迁移成功完成");
             }
-            catch (Exception ex) when (ex.Message.Contains("already exists"))
+            catch (Exception ex)
             {
-                // 如果表已经存在，跳过迁移
-                Console.WriteLine("数据库表已存在，跳过迁移");
+                Log.Warning(ex, "数据库迁移过程中发生异常，尝试修复数据库架构");
+                
+                // 如果迁移失败，使用架构修复服务
+                try
+                {
+                    var schemaFixService = scope.ServiceProvider.GetRequiredService<DatabaseSchemaFixService>();
+                    await schemaFixService.FixDatabaseSchemaAsync();
+                    Log.Information("数据库架构修复完成");
+                }
+                catch (Exception fixEx)
+                {
+                    Log.Error(fixEx, "数据库架构修复失败");
+                    // 不抛出异常，允许应用程序继续启动
+                }
             }
         }
         
@@ -265,6 +278,7 @@ public static class Program
         services.AddScoped<RedeemCodeService>();
         services.AddScoped<IInvitationService, InvitationService>();
         services.AddScoped<DatabaseInitializationService>();
+        services.AddScoped<DatabaseSchemaFixService>();
         services.AddScoped<AccountsService>();
         services.AddScoped<ClaudeProxyService>();
         services.AddScoped<StatisticsService>();
