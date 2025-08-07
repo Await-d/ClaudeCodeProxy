@@ -34,6 +34,11 @@ export function NavMain({
 }) {
   const location = useLocation();
   
+  // 添加防御性检查
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+  
   return (
     <SidebarGroup>
       <SidebarGroupLabel>管理功能</SidebarGroupLabel>

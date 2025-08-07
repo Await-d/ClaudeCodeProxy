@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   User,
   Gift,
+  TrendingUp,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -33,6 +34,11 @@ import {
 
 // 根据用户权限动态生成导航菜单
 const generateNavMain = (hasPermission: (permission: string) => boolean, user: any) => {
+  // 添加防御性检查，确保函数和用户对象存在
+  if (!hasPermission || typeof hasPermission !== 'function') {
+    return [];
+  }
+  
   const navItems = [];
 
   // 数据面板 - 所有用户都可以访问
@@ -118,6 +124,15 @@ const generateNavMain = (hasPermission: (permission: string) => boolean, user: a
     icon: FileText,
   });
 
+  // 高级统计 - 需要相应权限或管理员角色
+  if (hasPermission('system.metrics') || hasPermission('system.logs') || hasPermission('stats:view') || user?.roleName === 'Admin') {
+    navItems.push({
+      title: "高级统计",
+      url: "/advanced-stats",
+      icon: TrendingUp,
+    });
+  }
+
   // 系统设置 - 需要系统设置权限或管理员角色
   if (hasPermission('system.settings') || hasPermission('system:config') || user?.roleName === 'Admin') {
     navItems.push({
@@ -154,7 +169,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     avatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
   };
 
-  const navMain = generateNavMain(hasPermission, user);
+  const navMain = generateNavMain(hasPermission, user) || [];
 
   return (
     <Sidebar variant="inset" {...props}>
