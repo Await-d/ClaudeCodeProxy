@@ -72,7 +72,7 @@ const ProfilePage: React.FC = () => {
       } else {
         // Fallback to user context data
         const profileData = {
-          id: user?.id ,
+          id: user?.id || '',
           username: user?.username || '',
           email: user?.email || '',
           role: user?.roleName || 'User',

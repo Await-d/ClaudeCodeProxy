@@ -1,4 +1,3 @@
-import * as React from "react"
 import {
   BarChart3,
   Key,
@@ -12,13 +11,10 @@ import {
   Github,
   ExternalLink,
   DollarSign,
-<<<<<<< HEAD
   Layers,
   ShieldCheck,
-=======
   User,
   Gift,
->>>>>>> upstream/main
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -59,31 +55,16 @@ const generateNavMain = (hasPermission: (permission: string) => boolean, user: a
     title: "API Key管理",
     url: "/apikeys",
     icon: Key,
-<<<<<<< HEAD
-  },
-  {
-    title: "API Key分组",
-    url: "/api-key-groups",
-    icon: Layers,
-  },
-  {
-    title: "账号管理",
-    url: "/accounts",
-    icon: Users,
-  },
-  {
-    title: "权限管理",
-    url: "/permissions",
-    icon: ShieldCheck,
-  },
-  {
-    title: "价格管理",
-    url: "/pricing",
-    icon: DollarSign,
-  },
-  {
-=======
   });
+
+  // API Key分组 - 需要相应权限或管理员角色
+  if (hasPermission('apikey.group.view') || hasPermission('apikey:group:manage') || user?.roleName === 'Admin') {
+    navItems.push({
+      title: "API Key分组",
+      url: "/api-key-groups",
+      icon: Layers,
+    });
+  }
 
   // 账号管理 - 需要相应权限或管理员角色
   if (hasPermission('account.view') || hasPermission('account.management') || hasPermission('account:manage') || user?.roleName === 'Admin') {
@@ -91,6 +72,15 @@ const generateNavMain = (hasPermission: (permission: string) => boolean, user: a
       title: "账号管理",
       url: "/accounts",
       icon: Users,
+    });
+  }
+
+  // 权限管理 - 需要相应权限或管理员角色
+  if (hasPermission('permission.view') || hasPermission('permission.management') || hasPermission('permission:manage') || user?.roleName === 'Admin') {
+    navItems.push({
+      title: "权限管理",
+      url: "/permissions",
+      icon: ShieldCheck,
     });
   }
 
@@ -123,7 +113,6 @@ const generateNavMain = (hasPermission: (permission: string) => boolean, user: a
 
   // 请求日志 - 所有用户都可以查看自己的请求日志
   navItems.push({
->>>>>>> upstream/main
     title: "请求日志",
     url: "/request-logs",
     icon: FileText,

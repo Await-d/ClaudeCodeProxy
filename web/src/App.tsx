@@ -16,14 +16,11 @@ import PricingPage from '@/pages/pricing';
 import SettingsPage from '@/pages/settings';
 import AdvancedStatsPage from '@/pages/advanced-stats';
 import RequestLogsPage from '@/pages/request-logs';
-<<<<<<< HEAD
 import PermissionManagement from '@/pages/permissions';
-=======
 import ProfilePage from '@/pages/profile';
 import PersonalDashboardPage from '@/pages/personal-dashboard';
 import RedeemCodesPage from '@/pages/redeem-codes';
 import InviteFriendsPage from '@/pages/invite-friends';
->>>>>>> upstream/main
 import './App.css';
 
 const router = createBrowserRouter([
@@ -56,14 +53,11 @@ const router = createBrowserRouter([
       { path: 'request-logs', element: <RequestLogsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'advanced-stats', element: <AdvancedStatsPage /> },
-<<<<<<< HEAD
       { path: 'permissions', element: <PermissionManagement /> },
-=======
       { path: 'profile', element: <ProfilePage /> },
       { path: 'personal-dashboard', element: <PersonalDashboardPage /> },
       { path: 'redeem-codes', element: <RedeemCodesPage /> },
       { path: 'invite-friends', element: <InviteFriendsPage /> },
->>>>>>> upstream/main
     ],
   },
   {
