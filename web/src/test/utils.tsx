@@ -1,5 +1,6 @@
 import React from 'react'
-import { render, type RenderOptions, fireEvent } from '@testing-library/react'
+import { render, type RenderOptions } from '@testing-library/react'
+import { fireEvent } from '@testing-library/dom'
 import { vi } from 'vitest'
 import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from '@/contexts/ThemeContext'
