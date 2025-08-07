@@ -109,6 +109,26 @@ public sealed class Accounts : Entity<string>
     /// </summary>
     public long UsageCount { get; set; } = 0;
 
+    /// <summary>
+    /// 账号池分组标识（用于权限控制）
+    /// </summary>
+    public string? PoolGroup { get; set; }
+
+    /// <summary>
+    /// 账户标签列表（用于分类和筛选）
+    /// </summary>
+    public List<string>? Tags { get; set; }
+
+    /// <summary>
+    /// 账户权重（用于负载均衡，数字越大权重越高）
+    /// </summary>
+    public int Weight { get; set; } = 1;
+
+    /// <summary>
+    /// 最大并发数限制
+    /// </summary>
+    public int MaxConcurrency { get; set; } = 10;
+
     public bool IsClaudeConsole => Platform.Equals("claude-console", StringComparison.OrdinalIgnoreCase);
 
     public bool IsGemini => Platform.Equals("gemini", StringComparison.OrdinalIgnoreCase);

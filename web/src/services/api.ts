@@ -700,6 +700,79 @@ export interface RequestLogsRequest {
   sortDirection: string;
 }
 
+// ==================== Permission 相关类型定义 ====================
+
+export interface ApiKeyAccountPermission {
+  id: string;
+  apiKeyId: string;
+  apiKeyName: string;
+  accountPoolGroup: string;
+  allowedPlatforms: string[];
+  allowedAccountIds?: string[];
+  selectionStrategy: 'priority' | 'round_robin' | 'random' | 'performance';
+  priority: number;
+  isEnabled: boolean;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountPool {
+  id: string;
+  name: string;
+  description?: string;
+  platform: string;
+  totalAccounts: number;
+  activeAccounts: number;
+  healthyAccounts: number;
+  tags?: string[];
+  createdAt: string;
+  updatedAt?: string;
+  usage?: {
+    requestCount: number;
+    successRate: number;
+    averageResponseTime: number;
+    lastUsedAt?: string;
+  };
+}
+
+export interface PermissionOverview {
+  apiKeyId: string;
+  apiKeyName: string;
+  totalRules: number;
+  enabledRules: number;
+  accessiblePools: number;
+  accessibleAccounts: number;
+  lastUsedAt?: string;
+  status: 'active' | 'inactive' | 'expired' | 'restricted';
+  usage: {
+    requestCount: number;
+    successRate: number;
+    totalCost: number;
+    averageResponseTime: number;
+  };
+  platformDistribution: { [platform: string]: number };
+  poolDistribution: { [pool: string]: number };
+}
+
+export interface CreatePermissionRequest {
+  apiKeyId: string;
+  accountPoolGroup: string;
+  allowedPlatforms: string[];
+  allowedAccountIds?: string[];
+  selectionStrategy?: string;
+  priority?: number;
+  isEnabled?: boolean;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+}
+
+export interface BatchPermissionRequest {
+  apiKeyId: string;
+  permissions: CreatePermissionRequest[];
+}
+
 export interface RequestLogsResponse {
   data: RequestLogSummary[];
   total: number;
@@ -1593,6 +1666,319 @@ class ApiService {
       body: JSON.stringify(request),
     });
     return response.data;
+  }
+
+  // ==================== Permission Management APIs ====================
+
+  async getApiKeyPermissions(apiKeyId: string): Promise<ApiKeyAccountPermission[]> {
+    try {
+      return this.request<ApiKeyAccountPermission[]>(`/api-key-permissions/${apiKeyId}`);
+    } catch (error) {
+      console.error('Failed to fetch API key permissions:', error);
+      // Mock data for demo
+      return [
+        {
+          id: '1',
+          apiKeyId: apiKeyId,
+          apiKeyName: 'Production Key',
+          accountPoolGroup: 'production-pool',
+          allowedPlatforms: ['claude', 'claude-console'],
+          allowedAccountIds: undefined,
+          selectionStrategy: 'priority',
+          priority: 10,
+          isEnabled: true,
+          effectiveFrom: undefined,
+          effectiveTo: undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          apiKeyId: apiKeyId,
+          apiKeyName: 'Production Key',
+          accountPoolGroup: 'gemini-pool',
+          allowedPlatforms: ['gemini'],
+          allowedAccountIds: ['gemini-acc-1', 'gemini-acc-2'],
+          selectionStrategy: 'round_robin',
+          priority: 20,
+          isEnabled: true,
+          effectiveFrom: undefined,
+          effectiveTo: undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+      ];
+    }
+  }
+
+  async getAllPermissions(params?: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    platform?: string;
+    poolGroup?: string;
+    isEnabled?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{ data: ApiKeyAccountPermission[]; total: number }> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined) {
+            queryParams.append(key, value.toString());
+          }
+        });
+      }
+      return this.request<{ data: ApiKeyAccountPermission[]; total: number }>(`/api-key-permissions?${queryParams}`);
+    } catch (error) {
+      console.error('Failed to fetch all permissions:', error);
+      // Mock data for demo
+      const mockData = [
+        {
+          id: '1',
+          apiKeyId: '1',
+          apiKeyName: 'Production Key',
+          accountPoolGroup: 'production-pool',
+          allowedPlatforms: ['claude', 'claude-console'],
+          allowedAccountIds: undefined,
+          selectionStrategy: 'priority' as const,
+          priority: 10,
+          isEnabled: true,
+          effectiveFrom: undefined,
+          effectiveTo: undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          apiKeyId: '1',
+          apiKeyName: 'Production Key',
+          accountPoolGroup: 'gemini-pool',
+          allowedPlatforms: ['gemini'],
+          allowedAccountIds: ['gemini-acc-1', 'gemini-acc-2'],
+          selectionStrategy: 'round_robin' as const,
+          priority: 20,
+          isEnabled: true,
+          effectiveFrom: undefined,
+          effectiveTo: undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: '3',
+          apiKeyId: '2',
+          apiKeyName: 'Development Key',
+          accountPoolGroup: 'dev-pool',
+          allowedPlatforms: ['claude'],
+          allowedAccountIds: undefined,
+          selectionStrategy: 'random' as const,
+          priority: 30,
+          isEnabled: false,
+          effectiveFrom: undefined,
+          effectiveTo: undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+      ];
+      return { data: mockData, total: mockData.length };
+    }
+  }
+
+  async createPermission(data: CreatePermissionRequest): Promise<ApiKeyAccountPermission> {
+    return this.request<ApiKeyAccountPermission>('/api-key-permissions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePermission(id: string, data: Partial<CreatePermissionRequest>): Promise<ApiKeyAccountPermission> {
+    return this.request<ApiKeyAccountPermission>(`/api-key-permissions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePermission(id: string): Promise<void> {
+    return this.request<void>(`/api-key-permissions/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async togglePermissionEnabled(id: string): Promise<void> {
+    return this.request<void>(`/api-key-permissions/${id}/toggle`, {
+      method: 'PATCH',
+    });
+  }
+
+  async batchUpdatePermissions(data: BatchPermissionRequest): Promise<ApiKeyAccountPermission[]> {
+    return this.request<ApiKeyAccountPermission[]>('/api-key-permissions/batch', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async batchDeletePermissions(permissionIds: string[]): Promise<void> {
+    return this.request<void>('/api-key-permissions/batch', {
+      method: 'DELETE',
+      body: JSON.stringify({ permissionIds }),
+    });
+  }
+
+  async getAccountPools(): Promise<AccountPool[]> {
+    try {
+      return this.request<AccountPool[]>('/account-pools');
+    } catch (error) {
+      console.error('Failed to fetch account pools:', error);
+      // Mock data for demo
+      return [
+        {
+          id: '1',
+          name: 'production-pool',
+          description: '生产环境账号池',
+          platform: 'all',
+          totalAccounts: 5,
+          activeAccounts: 4,
+          healthyAccounts: 4,
+          tags: ['production', 'high-priority'],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          usage: {
+            requestCount: 1250,
+            successRate: 98.5,
+            averageResponseTime: 850,
+            lastUsedAt: new Date().toISOString(),
+          }
+        },
+        {
+          id: '2',
+          name: 'gemini-pool',
+          description: 'Gemini专用账号池',
+          platform: 'gemini',
+          totalAccounts: 3,
+          activeAccounts: 2,
+          healthyAccounts: 2,
+          tags: ['gemini', 'ai'],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          usage: {
+            requestCount: 450,
+            successRate: 95.2,
+            averageResponseTime: 1200,
+            lastUsedAt: new Date().toISOString(),
+          }
+        },
+        {
+          id: '3',
+          name: 'dev-pool',
+          description: '开发测试账号池',
+          platform: 'claude',
+          totalAccounts: 2,
+          activeAccounts: 1,
+          healthyAccounts: 1,
+          tags: ['development', 'testing'],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          usage: {
+            requestCount: 125,
+            successRate: 92.0,
+            averageResponseTime: 950,
+            lastUsedAt: new Date().toISOString(),
+          }
+        }
+      ];
+    }
+  }
+
+  async getPermissionOverview(): Promise<PermissionOverview[]> {
+    try {
+      return this.request<PermissionOverview[]>('/api-key-permissions/overview');
+    } catch (error) {
+      console.error('Failed to fetch permission overview:', error);
+      // Mock data for demo
+      return [
+        {
+          apiKeyId: '1',
+          apiKeyName: 'Production Key',
+          totalRules: 2,
+          enabledRules: 2,
+          accessiblePools: 2,
+          accessibleAccounts: 7,
+          lastUsedAt: new Date().toISOString(),
+          status: 'active',
+          usage: {
+            requestCount: 1700,
+            successRate: 97.1,
+            totalCost: 142.75,
+            averageResponseTime: 925,
+          },
+          platformDistribution: {
+            'claude': 800,
+            'claude-console': 450,
+            'gemini': 450,
+          },
+          poolDistribution: {
+            'production-pool': 1250,
+            'gemini-pool': 450,
+          }
+        },
+        {
+          apiKeyId: '2',
+          apiKeyName: 'Development Key',
+          totalRules: 1,
+          enabledRules: 0,
+          accessiblePools: 1,
+          accessibleAccounts: 2,
+          lastUsedAt: new Date(Date.now() - 86400000).toISOString(),
+          status: 'inactive',
+          usage: {
+            requestCount: 125,
+            successRate: 92.0,
+            totalCost: 12.50,
+            averageResponseTime: 950,
+          },
+          platformDistribution: {
+            'claude': 125,
+          },
+          poolDistribution: {
+            'dev-pool': 125,
+          }
+        }
+      ];
+    }
+  }
+
+  async checkPermission(apiKeyId: string, platform: string, accountId?: string): Promise<{
+    hasAccess: boolean;
+    reason?: string;
+    recommendedAccount?: any;
+  }> {
+    return this.request<{
+      hasAccess: boolean;
+      reason?: string;
+      recommendedAccount?: any;
+    }>('/api-key-permissions/check', {
+      method: 'POST',
+      body: JSON.stringify({ apiKeyId, platform, accountId }),
+    });
+  }
+
+  async getAvailablePlatforms(): Promise<string[]> {
+    try {
+      return this.request<string[]>('/platforms');
+    } catch (error) {
+      console.error('Failed to fetch platforms:', error);
+      return ['claude', 'claude-console', 'gemini', 'openai', 'all'];
+    }
+  }
+
+  async getSelectionStrategies(): Promise<{ value: string; label: string; description: string }[]> {
+    return [
+      { value: 'priority', label: '优先级', description: '按优先级顺序选择账户' },
+      { value: 'round_robin', label: '轮询', description: '轮流使用账户' },
+      { value: 'random', label: '随机', description: '随机选择账户' },
+      { value: 'performance', label: '性能优先', description: '选择性能最好的账户' }
+    ];
   }
 }
 

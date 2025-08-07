@@ -13,6 +13,8 @@ public interface IContext
     
     DbSet<ApiKeyGroupMapping> ApiKeyGroupMappings { get; set; }
     
+    DbSet<ApiKeyAccountPoolPermission> ApiKeyAccountPoolPermissions { get; set; }
+    
     public DbSet<RequestLog> RequestLogs { get; set; }
     
     public DbSet<StatisticsSnapshot> StatisticsSnapshots { get; set; }

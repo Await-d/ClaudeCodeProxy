@@ -11,6 +11,7 @@ public class MasterDbContext<TDbContext>(DbContextOptions<TDbContext> options) :
     public DbSet<ApiKey> ApiKeys { get; set; }
     public DbSet<ApiKeyGroup> ApiKeyGroups { get; set; }
     public DbSet<ApiKeyGroupMapping> ApiKeyGroupMappings { get; set; }
+    public DbSet<ApiKeyAccountPoolPermission> ApiKeyAccountPoolPermissions { get; set; }
     public DbSet<RequestLog> RequestLogs { get; set; }
     public DbSet<StatisticsSnapshot> StatisticsSnapshots { get; set; }
     public DbSet<ModelPricing> ModelPricings { get; set; }
@@ -257,6 +258,22 @@ public class MasterDbContext<TDbContext>(DbContextOptions<TDbContext> options) :
             entity.Property(e => e.UsageCount)
                 .HasDefaultValue(0L);
 
+            // 账号池相关字段配置
+            entity.Property(e => e.PoolGroup)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Tags)
+                .HasConversion(
+                    v => v == null || v.Count == 0 ? null : string.Join(',', v),
+                    v => string.IsNullOrEmpty(v) ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.Weight)
+                .HasDefaultValue(1);
+
+            entity.Property(e => e.MaxConcurrency)
+                .HasDefaultValue(10);
+
             // 平台特定字段
             entity.Property(e => e.ProjectId)
                 .HasMaxLength(100);
@@ -344,6 +361,16 @@ public class MasterDbContext<TDbContext>(DbContextOptions<TDbContext> options) :
             // 复合索引
             entity.HasIndex(e => new { e.Platform, e.IsEnabled, e.Status })
                 .HasDatabaseName("IX_Accounts_Platform_IsEnabled_Status");
+                
+            // 账号池分组索引
+            entity.HasIndex(e => e.PoolGroup)
+                .HasDatabaseName("IX_Accounts_PoolGroup");
+                
+            entity.HasIndex(e => new { e.PoolGroup, e.Platform, e.IsEnabled })
+                .HasDatabaseName("IX_Accounts_PoolGroup_Platform_IsEnabled");
+                
+            entity.HasIndex(e => new { e.PoolGroup, e.Weight })
+                .HasDatabaseName("IX_Accounts_PoolGroup_Weight");
         });
 
         // 配置 RequestLog 实体
@@ -842,6 +869,103 @@ public class MasterDbContext<TDbContext>(DbContextOptions<TDbContext> options) :
             entity.HasIndex(e => new { e.ApiKeyId, e.GroupId })
                 .IsUnique()
                 .HasDatabaseName("UX_ApiKeyGroupMappings_ApiKeyId_GroupId");
+        });
+
+        // 配置 ApiKeyAccountPoolPermission 实体
+        modelBuilder.Entity<ApiKeyAccountPoolPermission>(entity =>
+        {
+            entity.ToTable("ApiKeyAccountPoolPermissions");
+            entity.HasKey(e => e.Id);
+
+            // 基本属性配置
+            entity.Property(e => e.ApiKeyId)
+                .IsRequired();
+
+            entity.Property(e => e.AccountPoolGroup)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            // 数组字段配置
+            entity.Property(e => e.AllowedPlatforms)
+                .HasConversion(
+                    v => v == null || v.Length == 0 ? null : string.Join(',', v),
+                    v => string.IsNullOrEmpty(v) ? Array.Empty<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .HasMaxLength(500);
+
+            entity.Property(e => e.AllowedAccountIds)
+                .HasConversion(
+                    v => v == null || v.Length == 0 ? null : string.Join(',', v),
+                    v => string.IsNullOrEmpty(v) ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .HasMaxLength(2000);
+
+            // 字符串类型配置
+            entity.Property(e => e.SelectionStrategy)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("priority");
+
+            // 数值类型配置
+            entity.Property(e => e.Priority)
+                .HasDefaultValue(50);
+
+            // 布尔类型配置
+            entity.Property(e => e.IsEnabled)
+                .HasDefaultValue(true);
+
+            // 日期时间类型配置
+            entity.Property(e => e.EffectiveFrom)
+                .HasColumnType("datetime");
+
+            entity.Property(e => e.EffectiveTo)
+                .HasColumnType("datetime");
+
+            // 审计字段配置
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ModifiedBy)
+                .HasMaxLength(100);
+
+            // 索引配置
+            entity.HasIndex(e => e.ApiKeyId)
+                .HasDatabaseName("IX_ApiKeyAccountPoolPermissions_ApiKeyId");
+
+            entity.HasIndex(e => e.AccountPoolGroup)
+                .HasDatabaseName("IX_ApiKeyAccountPoolPermissions_AccountPoolGroup");
+
+            entity.HasIndex(e => e.IsEnabled)
+                .HasDatabaseName("IX_ApiKeyAccountPoolPermissions_IsEnabled");
+
+            entity.HasIndex(e => e.Priority)
+                .HasDatabaseName("IX_ApiKeyAccountPoolPermissions_Priority");
+
+            entity.HasIndex(e => e.SelectionStrategy)
+                .HasDatabaseName("IX_ApiKeyAccountPoolPermissions_SelectionStrategy");
+
+            // 复合索引（用于查询优化）
+            entity.HasIndex(e => new { e.ApiKeyId, e.IsEnabled })
+                .HasDatabaseName("IX_ApiKeyAccountPoolPermissions_ApiKeyId_IsEnabled");
+
+            entity.HasIndex(e => new { e.ApiKeyId, e.Priority, e.IsEnabled })
+                .HasDatabaseName("IX_ApiKeyAccountPoolPermissions_ApiKeyId_Priority_IsEnabled");
+
+            entity.HasIndex(e => new { e.AccountPoolGroup, e.IsEnabled })
+                .HasDatabaseName("IX_ApiKeyAccountPoolPermissions_AccountPoolGroup_IsEnabled");
+
+            // 外键关系配置
+            entity.HasOne(e => e.ApiKey)
+                .WithMany()
+                .HasForeignKey(e => e.ApiKeyId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_ApiKeyAccountPoolPermissions_ApiKeys_ApiKeyId");
+
+            // 唯一约束：一个API Key对一个账号池分组只能有一条权限记录
+            entity.HasIndex(e => new { e.ApiKeyId, e.AccountPoolGroup })
+                .IsUnique()
+                .HasDatabaseName("UX_ApiKeyAccountPoolPermissions_ApiKeyId_AccountPoolGroup");
         });
     }
 

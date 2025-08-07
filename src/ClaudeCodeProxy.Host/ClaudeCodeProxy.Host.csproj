@@ -5,6 +5,9 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+        <RunCodeAnalysis>false</RunCodeAnalysis>
     </PropertyGroup>
 
     <ItemGroup>

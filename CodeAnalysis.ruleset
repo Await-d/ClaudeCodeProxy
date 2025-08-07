@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="ClaudeCodeProxy Code Analysis Rules" Description="Code analysis rules for ClaudeCodeProxy project." ToolsVersion="16.0">
+  <Rules AnalyzerId="Microsoft.CodeAnalysis.CSharp" RuleNamespace="Microsoft.CodeAnalysis.CSharp">
+    <!-- 语言规则 -->
+    <Rule Id="CS1591" Action="None" />  <!-- Missing XML comment for publicly visible type or member -->
+  </Rules>
+  
+  <Rules AnalyzerId="Microsoft.CodeAnalysis.CSharp.Features" RuleNamespace="Microsoft.CodeAnalysis.CSharp.Features">
+    <!-- IDE规则 -->
+    <Rule Id="IDE0001" Action="Warning" />  <!-- Simplify name -->
+    <Rule Id="IDE0002" Action="Warning" />  <!-- Simplify member access -->
+    <Rule Id="IDE0003" Action="Warning" />  <!-- Remove this or Me qualification -->
+    <Rule Id="IDE0004" Action="Warning" />  <!-- Remove unnecessary cast -->
+    <Rule Id="IDE0005" Action="Warning" />  <!-- Remove unnecessary import -->
+    <Rule Id="IDE0007" Action="Warning" />  <!-- Use var instead of explicit type -->
+    <Rule Id="IDE0008" Action="Warning" />  <!-- Use explicit type instead of var -->
+  </Rules>
+
+  <Rules AnalyzerId="Microsoft.CodeAnalysis.NetAnalyzers" RuleNamespace="Microsoft.CodeAnalysis.NetAnalyzers">
+    <!-- 设计规则 -->
+    <Rule Id="CA1000" Action="Warning" />  <!-- Do not declare static members on generic types -->
+    <Rule Id="CA1001" Action="Error" />    <!-- Types that own disposable fields should be disposable -->
+    <Rule Id="CA1002" Action="Warning" />  <!-- Do not expose generic lists -->
+    <Rule Id="CA1003" Action="Warning" />  <!-- Use generic event handler instances -->
+    <Rule Id="CA1005" Action="Warning" />  <!-- Avoid excessive parameters on generic types -->
+    <Rule Id="CA1008" Action="Warning" />  <!-- Enums should have zero value -->
+    <Rule Id="CA1010" Action="Warning" />  <!-- Collections should implement generic interface -->
+    <Rule Id="CA1012" Action="Warning" />  <!-- Abstract types should not have constructors -->
+    <Rule Id="CA1014" Action="Warning" />  <!-- Mark assemblies with CLSCompliant -->
+    <Rule Id="CA1016" Action="Error" />    <!-- Mark assemblies with assembly version -->
+    <Rule Id="CA1017" Action="Warning" />  <!-- Mark assemblies with ComVisible -->
+    <Rule Id="CA1018" Action="Warning" />  <!-- Mark attributes with AttributeUsageAttribute -->
+    <Rule Id="CA1019" Action="Warning" />  <!-- Define accessors for attribute arguments -->
+
+    <!-- 全球化规则 -->
+    <Rule Id="CA1303" Action="None" />     <!-- Do not pass literals as localized parameters -->
+    <Rule Id="CA1304" Action="Warning" />  <!-- Specify CultureInfo -->
+    <Rule Id="CA1305" Action="Warning" />  <!-- Specify IFormatProvider -->
+    <Rule Id="CA1307" Action="Warning" />  <!-- Specify StringComparison -->
+    <Rule Id="CA1308" Action="Warning" />  <!-- Normalize strings to uppercase -->
+    <Rule Id="CA1309" Action="Warning" />  <!-- Use ordinal StringComparison -->
+    <Rule Id="CA1310" Action="Warning" />  <!-- Specify StringComparison for correctness -->
+
+    <!-- 互操作性规则 -->
+    <Rule Id="CA1400" Action="Error" />    <!-- P/Invoke entry points should exist -->
+    <Rule Id="CA1401" Action="Error" />    <!-- P/Invokes should not be visible -->
+    <Rule Id="CA1402" Action="Error" />    <!-- Avoid overloads in COM visible interfaces -->
+    <Rule Id="CA1403" Action="Error" />    <!-- Auto layout types should not be COM visible -->
+    <Rule Id="CA1404" Action="Error" />    <!-- Call GetLastError immediately after P/Invoke -->
+    <Rule Id="CA1405" Action="Error" />    <!-- COM visible type base types should be COM visible -->
+
+    <!-- 维护性规则 -->
+    <Rule Id="CA1501" Action="Warning" />  <!-- Avoid excessive inheritance -->
+    <Rule Id="CA1502" Action="Warning" />  <!-- Avoid excessive complexity -->
+    <Rule Id="CA1505" Action="Warning" />  <!-- Avoid unmaintainable code -->
+    <Rule Id="CA1506" Action="Warning" />  <!-- Avoid excessive class coupling -->
+    <Rule Id="CA1507" Action="Warning" />  <!-- Use nameof to express symbol names -->
+    <Rule Id="CA1508" Action="Warning" />  <!-- Avoid dead conditional code -->
+    <Rule Id="CA1509" Action="Warning" />  <!-- Invalid entry in code metrics rule specification file -->
+
+    <!-- 命名规则 -->
+    <Rule Id="CA1700" Action="Warning" />  <!-- Do not name enum values 'Reserved' -->
+    <Rule Id="CA1707" Action="Warning" />  <!-- Identifiers should not contain underscores -->
+    <Rule Id="CA1708" Action="Warning" />  <!-- Identifiers should differ by more than case -->
+    <Rule Id="CA1710" Action="Warning" />  <!-- Identifiers should have correct suffix -->
+    <Rule Id="CA1711" Action="Warning" />  <!-- Identifiers should not have incorrect suffix -->
+    <Rule Id="CA1712" Action="Warning" />  <!-- Do not prefix enum values with type name -->
+    <Rule Id="CA1713" Action="Warning" />  <!-- Events should not have 'Before' or 'After' prefix -->
+    <Rule Id="CA1714" Action="Warning" />  <!-- Flags enums should have plural names -->
+    <Rule Id="CA1715" Action="Warning" />  <!-- Identifiers should have correct prefix -->
+    <Rule Id="CA1716" Action="Warning" />  <!-- Identifiers should not match keywords -->
+    <Rule Id="CA1717" Action="Warning" />  <!-- Only FlagsAttribute enums should have plural names -->
+    <Rule Id="CA1720" Action="Warning" />  <!-- Identifier contains type name -->
+    <Rule Id="CA1721" Action="Warning" />  <!-- Property names should not match get methods -->
+    <Rule Id="CA1724" Action="Warning" />  <!-- Type names should not match namespaces -->
+    <Rule Id="CA1725" Action="Warning" />  <!-- Parameter names should match base declaration -->
+
+    <!-- 性能规则 -->
+    <Rule Id="CA1800" Action="Warning" />  <!-- Do not cast unnecessarily -->
+    <Rule Id="CA1801" Action="Warning" />  <!-- Review unused parameters -->
+    <Rule Id="CA1802" Action="Warning" />  <!-- Use literals where appropriate -->
+    <Rule Id="CA1805" Action="Warning" />  <!-- Do not initialize unnecessarily -->
+    <Rule Id="CA1806" Action="Warning" />  <!-- Do not ignore method results -->
+    <Rule Id="CA1810" Action="Warning" />  <!-- Initialize reference type static fields inline -->
+    <Rule Id="CA1812" Action="Warning" />  <!-- Avoid uninstantiated internal classes -->
+    <Rule Id="CA1813" Action="Warning" />  <!-- Avoid unsealed attributes -->
+    <Rule Id="CA1814" Action="Warning" />  <!-- Prefer jagged arrays over multidimensional -->
+    <Rule Id="CA1815" Action="Warning" />  <!-- Override equals and operator equals on value types -->
+    <Rule Id="CA1816" Action="Warning" />  <!-- Dispose methods should call SuppressFinalize -->
+    <Rule Id="CA1819" Action="Warning" />  <!-- Properties should not return arrays -->
+    <Rule Id="CA1820" Action="Warning" />  <!-- Test for empty strings using string length -->
+    <Rule Id="CA1821" Action="Error" />    <!-- Remove empty Finalizers -->
+    <Rule Id="CA1822" Action="Warning" />  <!-- Mark members as static -->
+    <Rule Id="CA1823" Action="Warning" />  <!-- Avoid unused private fields -->
+    <Rule Id="CA1824" Action="Warning" />  <!-- Mark assemblies with NeutralResourcesLanguageAttribute -->
+    <Rule Id="CA1825" Action="Warning" />  <!-- Avoid zero-length array allocations -->
+
+    <!-- 可靠性规则 -->
+    <Rule Id="CA2000" Action="Warning" />  <!-- Dispose objects before losing scope -->
+    <Rule Id="CA2001" Action="Warning" />  <!-- Avoid calling problematic methods -->
+    <Rule Id="CA2002" Action="Error" />    <!-- Do not lock on objects with weak identity -->
+    <Rule Id="CA2007" Action="Warning" />  <!-- Consider calling ConfigureAwait on the awaited task -->
+    <Rule Id="CA2008" Action="Warning" />  <!-- Do not create tasks without passing a TaskScheduler -->
+    <Rule Id="CA2009" Action="Warning" />  <!-- Do not call ToImmutableCollection on an ImmutableCollection value -->
+    <Rule Id="CA2011" Action="Warning" />  <!-- Avoid infinite recursion -->
+    <Rule Id="CA2012" Action="Warning" />  <!-- Use ValueTasks correctly -->
+    <Rule Id="CA2013" Action="Warning" />  <!-- Do not use ReferenceEquals with value types -->
+    <Rule Id="CA2014" Action="Warning" />  <!-- Do not use stackalloc in loops -->
+    <Rule Id="CA2015" Action="Warning" />  <!-- Do not define finalizers for types derived from MemoryManager<T> -->
+    <Rule Id="CA2016" Action="Warning" />  <!-- Forward the 'CancellationToken' parameter to methods -->
+
+    <!-- 安全规则 -->
+    <Rule Id="CA2100" Action="Error" />    <!-- Review SQL queries for security vulnerabilities -->
+    <Rule Id="CA2101" Action="Error" />    <!-- Specify marshaling for P/Invoke string arguments -->
+    <Rule Id="CA2102" Action="Error" />    <!-- Catch non-CLSCompliant exceptions in general handlers -->
+    <Rule Id="CA2103" Action="Error" />    <!-- Review imperative security -->
+    <Rule Id="CA2104" Action="Error" />    <!-- Do not declare read only mutable reference types -->
+    <Rule Id="CA2105" Action="Error" />    <!-- Array fields should not be read only -->
+    <Rule Id="CA2106" Action="Error" />    <!-- Secure asserts -->
+    <Rule Id="CA2107" Action="Error" />    <!-- Review deny and permit only usage -->
+    <Rule Id="CA2108" Action="Error" />    <!-- Review declarative security on value types -->
+    <Rule Id="CA2109" Action="Error" />    <!-- Review visible event handlers -->
+    <Rule Id="CA2110" Action="Error" />    <!-- Review visible event handlers -->
+    <Rule Id="CA2111" Action="Error" />    <!-- Pointers should not be visible -->
+    <Rule Id="CA2112" Action="Error" />    <!-- Secured types should not expose fields -->
+
+    <!-- 使用规则 -->
+    <Rule Id="CA2200" Action="Error" />    <!-- Rethrow to preserve stack details -->
+    <Rule Id="CA2201" Action="Warning" />  <!-- Do not raise reserved exception types -->
+    <Rule Id="CA2202" Action="Error" />    <!-- Do not dispose objects multiple times -->
+    <Rule Id="CA2207" Action="Error" />    <!-- Initialize value type static fields inline -->
+    <Rule Id="CA2208" Action="Warning" />  <!-- Instantiate argument exceptions correctly -->
+    <Rule Id="CA2211" Action="Warning" />  <!-- Non-constant fields should not be visible -->
+    <Rule Id="CA2213" Action="Error" />    <!-- Disposable fields should be disposed -->
+    <Rule Id="CA2214" Action="Error" />    <!-- Do not call overridable methods in constructors -->
+    <Rule Id="CA2215" Action="Error" />    <!-- Dispose methods should call base class dispose -->
+    <Rule Id="CA2216" Action="Error" />    <!-- Disposable types should declare finalizer -->
+    <Rule Id="CA2217" Action="Warning" />  <!-- Do not mark enums with FlagsAttribute -->
+    <Rule Id="CA2218" Action="Warning" />  <!-- Override GetHashCode on overriding Equals -->
+    <Rule Id="CA2219" Action="Warning" />  <!-- Do not raise exceptions in finally clauses -->
+    <Rule Id="CA2220" Action="Error" />    <!-- Finalizers should call base class finalizer -->
+    <Rule Id="CA2221" Action="Warning" />  <!-- Finalizers should be protected -->
+    <Rule Id="CA2222" Action="Warning" />  <!-- Do not decrease inherited member visibility -->
+    <Rule Id="CA2223" Action="Warning" />  <!-- Members should differ by more than return type -->
+    <Rule Id="CA2224" Action="Warning" />  <!-- Override Equals on overloading operator equals -->
+    <Rule Id="CA2225" Action="Warning" />  <!-- Operator overloads have named alternates -->
+    <Rule Id="CA2226" Action="Warning" />  <!-- Operators should have symmetrical overloads -->
+    <Rule Id="CA2227" Action="Warning" />  <!-- Collection properties should be read only -->
+    <Rule Id="CA2229" Action="Error" />    <!-- Implement serialization constructors -->
+    <Rule Id="CA2231" Action="Error" />    <!-- Overload operator equals on overriding value type Equals -->
+    <Rule Id="CA2234" Action="Warning" />  <!-- Pass system uri objects instead of strings -->
+    <Rule Id="CA2235" Action="Error" />    <!-- Mark all non-serializable fields -->
+    <Rule Id="CA2236" Action="Error" />    <!-- Call base class methods on ISerializable types -->
+    <Rule Id="CA2237" Action="Error" />    <!-- Mark ISerializable types with serializable -->
+    <Rule Id="CA2238" Action="Error" />    <!-- Implement serialization methods correctly -->
+    <Rule Id="CA2240" Action="Error" />    <!-- Implement ISerializable correctly -->
+    <Rule Id="CA2241" Action="Error" />    <!-- Provide correct arguments to formatting methods -->
+    <Rule Id="CA2242" Action="Error" />    <!-- Test for NaN correctly -->
+    <Rule Id="CA2243" Action="Warning" />  <!-- Attribute string literals should parse correctly -->
+    <Rule Id="CA2244" Action="Warning" />  <!-- Do not duplicate indexed element initializations -->
+    <Rule Id="CA2245" Action="Warning" />  <!-- Do not assign a property to itself -->
+    <Rule Id="CA2246" Action="Warning" />  <!-- Assigning symbol and its member in the same statement -->
+    <Rule Id="CA2247" Action="Warning" />  <!-- Argument passed to TaskCompletionSource constructor should be TaskCreationOptions enum instead of TaskContinuationOptions enum -->
+    <Rule Id="CA2248" Action="Warning" />  <!-- Provide correct 'enum' argument to 'Enum.HasFlag' -->
+    <Rule Id="CA2249" Action="Warning" />  <!-- Consider using 'string.Contains' instead of 'string.IndexOf' -->
+
+    <!-- 安全相关的新规则 -->
+    <Rule Id="CA3001" Action="Error" />    <!-- Review code for SQL injection vulnerabilities -->
+    <Rule Id="CA3002" Action="Error" />    <!-- Review code for XSS vulnerabilities -->
+    <Rule Id="CA3003" Action="Error" />    <!-- Review code for file path injection vulnerabilities -->
+    <Rule Id="CA3004" Action="Error" />    <!-- Review code for information disclosure vulnerabilities -->
+    <Rule Id="CA3005" Action="Error" />    <!-- Review code for LDAP injection vulnerabilities -->
+    <Rule Id="CA3006" Action="Error" />    <!-- Review code for process command injection vulnerabilities -->
+    <Rule Id="CA3007" Action="Error" />    <!-- Review code for open redirect vulnerabilities -->
+    <Rule Id="CA3008" Action="Error" />    <!-- Review code for XPath injection vulnerabilities -->
+    <Rule Id="CA3009" Action="Error" />    <!-- Review code for XML injection vulnerabilities -->
+    <Rule Id="CA3010" Action="Error" />    <!-- Review code for XAML injection vulnerabilities -->
+    <Rule Id="CA3011" Action="Error" />    <!-- Review code for DLL injection vulnerabilities -->
+    <Rule Id="CA3012" Action="Error" />    <!-- Review code for regex injection vulnerabilities -->
+
+    <!-- 加密相关规则 -->
+    <Rule Id="CA5350" Action="Error" />    <!-- Do Not Use Weak Cryptographic Algorithms -->
+    <Rule Id="CA5351" Action="Error" />    <!-- Do Not Use Broken Cryptographic Algorithms -->
+    <Rule Id="CA5358" Action="Error" />    <!-- Review cipher mode usage with cryptography experts -->
+    <Rule Id="CA5359" Action="Error" />    <!-- Do Not Disable Certificate Validation -->
+    <Rule Id="CA5360" Action="Error" />    <!-- Do Not Call Dangerous Methods In Deserialization -->
+    <Rule Id="CA5361" Action="Error" />    <!-- Do Not Disable SChannel Use of Strong Crypto -->
+    <Rule Id="CA5362" Action="Error" />    <!-- Potential reference cycle in deserialized object graph -->
+    <Rule Id="CA5363" Action="Error" />    <!-- Do Not Disable Request Validation -->
+    <Rule Id="CA5364" Action="Error" />    <!-- Do Not Use Deprecated Security Protocols -->
+    <Rule Id="CA5365" Action="Error" />    <!-- Do Not Disable HTTP Header Checking -->
+    <Rule Id="CA5366" Action="Error" />    <!-- Use XmlReader for 'DataSet.ReadXml()' -->
+    <Rule Id="CA5367" Action="Error" />    <!-- Do Not Serialize Types With Pointer Fields -->
+    <Rule Id="CA5368" Action="Error" />    <!-- Set ViewStateUserKey For Classes Derived From Page -->
+    <Rule Id="CA5369" Action="Error" />    <!-- Use XmlReader for 'XmlSerializer.Deserialize()' -->
+    <Rule Id="CA5370" Action="Error" />    <!-- Use XmlReader for XmlValidatingReader constructor -->
+    <Rule Id="CA5371" Action="Error" />    <!-- Use XmlReader for 'XmlSchema.Read()' -->
+    <Rule Id="CA5372" Action="Error" />    <!-- Use XmlReader for XPathDocument constructor -->
+    <Rule Id="CA5373" Action="Error" />    <!-- Do not use obsolete key derivation function -->
+    <Rule Id="CA5374" Action="Error" />    <!-- Do Not Use XslTransform -->
+    <Rule Id="CA5384" Action="Error" />    <!-- Do Not Use Digital Signature Algorithm (DSA) -->
+    <Rule Id="CA5385" Action="Error" />    <!-- Use Rivest-Shamir-Adleman (RSA) Algorithm With Sufficient Key Size -->
+    <Rule Id="CA5394" Action="Error" />    <!-- Do not use insecure randomness -->
+    <Rule Id="CA5397" Action="Error" />    <!-- Do not use deprecated SslProtocols values -->
+  </Rules>
+</RuleSet>

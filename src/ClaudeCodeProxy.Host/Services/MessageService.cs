@@ -118,9 +118,17 @@ public partial class MessageService(
 
         var sessionHash = sessionHelper.GenerateSessionHash(request);
 
-        var account =
-            await accountsService.SelectAccountForApiKey(apiKeyValue, sessionHash, request.Model,
-                httpContext.RequestAborted);
+        // 使用智能账户选择（集成权限控制）
+        var apiKeyGroupService = httpContext.RequestServices.GetService<IApiKeyGroupService>();
+        var permissionService = httpContext.RequestServices.GetService<IApiKeyAccountPermissionService>();
+        
+        var account = await accountsService.SelectAccountIntelligent(
+            apiKeyValue, 
+            sessionHash, 
+            request.Model,
+            apiKeyGroupService,
+            permissionService,
+            httpContext.RequestAborted);
 
         // 实现模型映射功能
         var mappedModel = MapRequestedModel(request.Model, account);

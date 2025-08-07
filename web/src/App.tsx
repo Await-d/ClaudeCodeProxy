@@ -13,6 +13,7 @@ import PricingPage from '@/pages/pricing';
 import SettingsPage from '@/pages/settings';
 import AdvancedStatsPage from '@/pages/advanced-stats';
 import RequestLogsPage from '@/pages/request-logs';
+import PermissionManagement from '@/pages/permissions';
 import './App.css';
 
 const router = createBrowserRouter([
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: 'request-logs', element: <RequestLogsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'advanced-stats', element: <AdvancedStatsPage /> },
+      { path: 'permissions', element: <PermissionManagement /> },
     ],
   },
   {

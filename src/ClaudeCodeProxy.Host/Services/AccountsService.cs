@@ -476,6 +476,410 @@ public class AccountsService(IContext context, IMemoryCache memoryCache, ILogger
     }
 
     /// <summary>
+    /// 根据API Key的账号池权限选择账户（新权限控制模式）
+    /// </summary>
+    /// <param name="apiKeyValue">API Key值</param>
+    /// <param name="sessionHash">会话哈希</param>
+    /// <param name="requestedModel">请求的模型</param>
+    /// <param name="permissionService">账号池权限服务</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>选中的账户</returns>
+    /// <summary>
+    /// 根据API Key的账号池权限选择账户（新权限控制模式）
+    /// 提供最精细的权限控制和高级负载均衡策略
+    /// </summary>
+    /// <param name="apiKeyValue">API Key值</param>
+    /// <param name="sessionHash">会话哈希</param>
+    /// <param name="requestedModel">请求的模型</param>
+    /// <param name="permissionService">账号池权限服务</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>选中的账户</returns>
+    public async Task<Accounts?> SelectAccountForApiKeyWithPoolPermission(ApiKey apiKeyValue, string sessionHash,
+        string? requestedModel = null, IApiKeyAccountPermissionService? permissionService = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (permissionService == null)
+            {
+                logger.LogWarning("⚠️ 权限服务未提供，无法使用账号池权限控制");
+                return null;
+            }
+
+            // 确定请求的平台类型
+            var platform = DeterminePlatformFromService(apiKeyValue.Service);
+            
+            logger.LogInformation("🔐 API Key {ApiKeyName} 使用账号池权限控制，平台: {Platform}", 
+                apiKeyValue.Name, platform);
+
+            // 通过权限服务选择最佳账户（包含智能负载均衡）
+            var selectedAccount = await permissionService.SelectBestAccountAsync(
+                apiKeyValue.Id, platform, sessionHash, cancellationToken);
+
+            if (selectedAccount != null)
+            {
+                // 双重验证：确保选择的账户确实可用
+                if (await IsAccountAvailableAsync(selectedAccount, cancellationToken))
+                {
+                    logger.LogInformation(
+                        "🎯 通过账号池权限成功选择账户: {AccountName} ({AccountId}) for API key {ApiKeyName}",
+                        selectedAccount.Name, selectedAccount.Id, apiKeyValue.Name);
+
+                    // 更新账户使用统计
+                    await UpdateLastUsedAsync(selectedAccount.Id, cancellationToken);
+                    
+                    // 记录成功的权限使用（用于后续优化）
+                    await RecordPermissionUsageAsync(apiKeyValue.Id, selectedAccount.Id, true, cancellationToken);
+                    
+                    return selectedAccount;
+                }
+                else
+                {
+                    logger.LogWarning("⚠️ 权限服务选择的账户 {AccountId} 实际不可用，可能存在状态同步问题", 
+                        selectedAccount.Id);
+                        
+                    // 记录失败的权限使用
+                    await RecordPermissionUsageAsync(apiKeyValue.Id, selectedAccount.Id, false, cancellationToken);
+                }
+            }
+            else
+            {
+                logger.LogWarning("⚠️ 账号池权限控制未能找到可用账户，API Key: {ApiKeyName}, 平台: {Platform}", 
+                    apiKeyValue.Name, platform);
+                    
+                // 检查是否有权限配置但无可用账户
+                var permissions = await permissionService.GetPermissionsAsync(apiKeyValue.Id, cancellationToken);
+                if (permissions.Any(p => p.IsEnabled))
+                {
+                    logger.LogWarning("⚠️ API Key {ApiKeyName} 有权限配置但无可用账户，请检查账户池状态", apiKeyValue.Name);
+                }
+            }
+
+            return null;
+        }
+        catch (Exception error)
+        {
+            logger.LogError(error, "❌ 通过账号池权限选择账户失败: {ApiKeyName}, {Platform}", 
+                apiKeyValue.Name, DeterminePlatformFromService(apiKeyValue.Service));
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 智能账户选择（整合所有选择策略）
+    /// </summary>
+    /// <param name="apiKeyValue">API Key值</param>
+    /// <param name="sessionHash">会话哈希</param>
+    /// <param name="requestedModel">请求的模型</param>
+    /// <param name="apiKeyGroupService">API Key分组服务</param>
+    /// <param name="permissionService">账号池权限服务</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>选中的账户</returns>
+    /// <summary>
+    /// 智能账户选择（整合所有选择策略）
+    /// 优先级：账号池权限控制 > API Key分组管理 > 传统固定绑定
+    /// </summary>
+    /// <param name="apiKeyValue">API Key值</param>
+    /// <param name="sessionHash">会话哈希</param>
+    /// <param name="requestedModel">请求的模型</param>
+    /// <param name="apiKeyGroupService">API Key分组服务</param>
+    /// <param name="permissionService">账号池权限服务</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>选中的账户</returns>
+    public async Task<Accounts?> SelectAccountIntelligent(ApiKey apiKeyValue, string sessionHash,
+        string? requestedModel = null, 
+        IApiKeyGroupService? apiKeyGroupService = null,
+        IApiKeyAccountPermissionService? permissionService = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            logger.LogInformation("🤖 开始智能账户选择，API Key: {ApiKeyName}", apiKeyValue.Name);
+
+            // 策略1: 优先使用账号池权限控制（最新功能，提供最精细的控制）
+            if (permissionService != null)
+            {
+                var hasPermissions = await HasAccountPoolPermissions(apiKeyValue.Id, permissionService, cancellationToken);
+                if (hasPermissions)
+                {
+                    logger.LogInformation("📋 使用账号池权限控制策略");
+                    var account = await SelectAccountForApiKeyWithPoolPermission(
+                        apiKeyValue, sessionHash, requestedModel, permissionService, cancellationToken);
+                    
+                    if (account != null)
+                    {
+                        logger.LogInformation("✅ 账号池权限控制策略成功选择账户: {AccountId} ({AccountName})", 
+                            account.Id, account.Name);
+                        return account;
+                    }
+                    else
+                    {
+                        logger.LogWarning("⚠️ 账号池权限控制策略未能选择到可用账户");
+                    }
+                }
+                else
+                {
+                    logger.LogDebug("🔍 API Key {ApiKeyName} 未配置账号池权限", apiKeyValue.Name);
+                }
+            }
+
+            // 策略2: 使用API Key分组管理（支持复杂的分组和故障转移）
+            if (apiKeyValue.IsGroupManaged && apiKeyGroupService != null && apiKeyValue.GroupIds.Count > 0)
+            {
+                logger.LogInformation("👥 使用API Key分组管理策略");
+                var account = await SelectAccountForApiKeyWithGroup(
+                    apiKeyValue, sessionHash, requestedModel, apiKeyGroupService, cancellationToken);
+                
+                if (account != null)
+                {
+                    logger.LogInformation("✅ API Key分组管理策略成功选择账户: {AccountId} ({AccountName})", 
+                        account.Id, account.Name);
+                    return account;
+                }
+                else
+                {
+                    logger.LogWarning("⚠️ API Key分组管理策略未能选择到可用账户");
+                }
+            }
+            else if (apiKeyValue.IsGroupManaged)
+            {
+                logger.LogWarning("⚠️ API Key {ApiKeyName} 启用了分组管理但未提供分组服务或未配置分组", apiKeyValue.Name);
+            }
+
+            // 策略3: 回退到传统固定绑定模式（向后兼容）
+            logger.LogInformation("🔗 使用传统固定绑定策略");
+            var fallbackAccount = await SelectAccountForApiKey(apiKeyValue, sessionHash, requestedModel, cancellationToken);
+            
+            if (fallbackAccount != null)
+            {
+                logger.LogInformation("✅ 传统固定绑定策略成功选择账户: {AccountId} ({AccountName})", 
+                    fallbackAccount.Id, fallbackAccount.Name);
+            }
+            else
+            {
+                logger.LogError("❌ 所有策略都未能选择到可用账户，API Key: {ApiKeyName}", apiKeyValue.Name);
+            }
+            
+            return fallbackAccount;
+        }
+        catch (Exception error)
+        {
+            logger.LogError(error, "❌ 智能账户选择失败，API Key: {ApiKeyName}", apiKeyValue.Name);
+            throw;
+        }
+    }
+
+    #region 辅助方法
+
+    /// <summary>
+    /// 检查API Key是否配置了账号池权限
+    /// </summary>
+    private async Task<bool> HasAccountPoolPermissions(Guid apiKeyId, 
+        IApiKeyAccountPermissionService permissionService, 
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var permissions = await permissionService.GetPermissionsAsync(apiKeyId, cancellationToken);
+            return permissions.Any(p => p.IsEnabled && p.IsEffective());
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 根据服务类型确定平台类型
+    /// </summary>
+    private string DeterminePlatformFromService(string service)
+    {
+        return service.ToLowerInvariant() switch
+        {
+            "claude" => "claude",
+            "claude-console" => "claude-console", 
+            "gemini" => "gemini",
+            "openai" => "openai",
+            "thor" => "thor",
+            _ => "claude"
+        };
+    }
+
+    /// <summary>
+    /// 记录权限使用情况（用于统计和优化）
+    /// </summary>
+    /// <param name="apiKeyId">API Key ID</param>
+    /// <param name="accountId">账户ID</param>
+    /// <param name="success">是否成功</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    private async Task RecordPermissionUsageAsync(Guid apiKeyId, string accountId, bool success, 
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // 这里可以记录到数据库或缓存中，用于后续的使用统计和优化
+            // 简单实现：更新账户的使用计数
+            if (success)
+            {
+                await UpdateAccountLastUsedAsync(accountId, cancellationToken);
+            }
+            
+            logger.LogDebug("记录权限使用: API Key {ApiKeyId}, 账户 {AccountId}, 成功: {Success}", 
+                apiKeyId, accountId, success);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("记录权限使用失败: {Error}", ex.Message);
+            // 不抛出异常，避免影响主流程
+        }
+    }
+
+    /// <summary>
+    /// 获取账户池健康状态统计
+    /// </summary>
+    /// <param name="poolGroup">账户池分组</param>
+    /// <param name="platform">平台类型</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>健康状态统计</returns>
+    public async Task<AccountPoolHealthStats> GetAccountPoolHealthStatsAsync(
+        string poolGroup, 
+        string platform, 
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var accounts = await context.Accounts
+                .AsNoTracking()
+                .Where(a => a.PoolGroup == poolGroup && a.Platform == platform)
+                .ToListAsync(cancellationToken);
+
+            var stats = new AccountPoolHealthStats
+            {
+                PoolGroup = poolGroup,
+                Platform = platform,
+                TotalAccounts = accounts.Count,
+                EnabledAccounts = accounts.Count(a => a.IsEnabled),
+                ActiveAccounts = accounts.Count(a => a.IsEnabled && a.Status == "active"),
+                RateLimitedAccounts = accounts.Count(a => a.RateLimitedUntil.HasValue && a.RateLimitedUntil > DateTime.UtcNow),
+                ErrorAccounts = accounts.Count(a => !string.IsNullOrEmpty(a.LastError)),
+                AverageUsageCount = accounts.Where(a => a.IsEnabled).Average(a => (double?)a.UsageCount) ?? 0,
+                LastCheckedAt = DateTime.UtcNow
+            };
+
+            return stats;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "获取账户池健康状态统计失败: {PoolGroup}, {Platform}", poolGroup, platform);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 验证账户池权限配置的有效性
+    /// </summary>
+    /// <param name="apiKeyId">API Key ID</param>
+    /// <param name="permissionService">权限服务</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>验证结果</returns>
+    public async Task<PermissionValidationResult> ValidateAccountPoolPermissionsAsync(
+        Guid apiKeyId, 
+        IApiKeyAccountPermissionService permissionService,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = new PermissionValidationResult
+            {
+                ApiKeyId = apiKeyId,
+                IsValid = true,
+                ValidationMessages = new List<string>()
+            };
+
+            // 获取所有权限配置
+            var permissions = await permissionService.GetPermissionsAsync(apiKeyId, cancellationToken);
+            result.TotalPermissions = permissions.Count;
+
+            if (!permissions.Any())
+            {
+                result.ValidationMessages.Add("未配置任何账号池权限");
+                result.IsValid = false;
+                return result;
+            }
+
+            // 验证每个权限配置
+            foreach (var permission in permissions)
+            {
+                if (!permission.IsEnabled)
+                {
+                    result.DisabledPermissions++;
+                    continue;
+                }
+
+                if (!permission.IsEffective())
+                {
+                    result.IneffectivePermissions++;
+                    result.ValidationMessages.Add($"权限 '{permission.AccountPoolGroup}' 未生效（时间范围问题）");
+                    continue;
+                }
+
+                result.EffectivePermissions++;
+
+                // 检查每个平台是否有可用账户
+                foreach (var platform in permission.AllowedPlatforms)
+                {
+                    if (platform.Equals("all", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var allowedAccounts = await permissionService.GetAllowedAccountsAsync(
+                        apiKeyId, platform, cancellationToken);
+
+                    if (!allowedAccounts.Any())
+                    {
+                        result.ValidationMessages.Add(
+                            $"权限 '{permission.AccountPoolGroup}' 在平台 '{platform}' 上没有可用账户");
+                        result.IsValid = false;
+                    }
+                    else
+                    {
+                        var availableCount = 0;
+                        foreach (var account in allowedAccounts)
+                        {
+                            if (await IsAccountAvailableAsync(account, cancellationToken))
+                            {
+                                availableCount++;
+                            }
+                        }
+
+                        if (availableCount == 0)
+                        {
+                            result.ValidationMessages.Add(
+                                $"权限 '{permission.AccountPoolGroup}' 在平台 '{platform}' 上的所有账户都不可用");
+                            result.IsValid = false;
+                        }
+                    }
+                }
+            }
+
+            result.ValidationPerformed = true;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "验证账户池权限配置失败: {ApiKeyId}", apiKeyId);
+            return new PermissionValidationResult
+            {
+                ApiKeyId = apiKeyId,
+                IsValid = false,
+                ValidationMessages = new List<string> { $"验证过程发生错误: {ex.Message}" },
+                ValidationPerformed = false
+            };
+        }
+    }
+
+    #endregion
+
+    /// <summary>
     /// 根据API Key获取对应的账户
     /// </summary>
     private async Task<Accounts?> GetAccountForApiKeyAsync(ApiKey apiKey, CancellationToken cancellationToken = default)
@@ -535,7 +939,7 @@ public class AccountsService(IContext context, IMemoryCache memoryCache, ILogger
     /// <summary>
     /// 检查账户是否可用
     /// </summary>
-    private async Task<bool> IsAccountAvailableAsync(Accounts account, CancellationToken cancellationToken = default)
+    public async Task<bool> IsAccountAvailableAsync(Accounts account, CancellationToken cancellationToken = default)
     {
         // 刷新账户状态以获取最新信息
         var latestAccount = await GetAccountByIdAsync(account.Id, cancellationToken);
@@ -903,4 +1307,43 @@ public class AccountsService(IContext context, IMemoryCache memoryCache, ILogger
                 .SetProperty(a => a.UsageCount, a => a.UsageCount + 1)
                 .SetProperty(a => a.ModifiedAt, DateTime.UtcNow), cancellationToken);
     }
+
+    #region 权限控制相关的数据传输对象
+
+    /// <summary>
+    /// 账户池健康状态统计
+    /// </summary>
+    public class AccountPoolHealthStats
+    {
+        public string PoolGroup { get; set; } = string.Empty;
+        public string Platform { get; set; } = string.Empty;
+        public int TotalAccounts { get; set; }
+        public int EnabledAccounts { get; set; }
+        public int ActiveAccounts { get; set; }
+        public int RateLimitedAccounts { get; set; }
+        public int ErrorAccounts { get; set; }
+        public double AverageUsageCount { get; set; }
+        public DateTime LastCheckedAt { get; set; }
+        
+        public double HealthScore => TotalAccounts > 0 ? (double)ActiveAccounts / TotalAccounts : 0.0;
+        public bool IsHealthy => HealthScore >= 0.5; // 50%以上的账户可用认为健康
+    }
+
+    /// <summary>
+    /// 权限验证结果
+    /// </summary>
+    public class PermissionValidationResult
+    {
+        public Guid ApiKeyId { get; set; }
+        public bool IsValid { get; set; }
+        public bool ValidationPerformed { get; set; }
+        public int TotalPermissions { get; set; }
+        public int EffectivePermissions { get; set; }
+        public int DisabledPermissions { get; set; }
+        public int IneffectivePermissions { get; set; }
+        public List<string> ValidationMessages { get; set; } = new();
+        public DateTime ValidatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    #endregion
 }

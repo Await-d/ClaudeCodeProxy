@@ -12,6 +12,7 @@ import {
   ExternalLink,
   DollarSign,
   Layers,
+  ShieldCheck,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -49,6 +50,11 @@ const navMain = [
     title: "账号管理",
     url: "/accounts",
     icon: Users,
+  },
+  {
+    title: "权限管理",
+    url: "/permissions",
+    icon: ShieldCheck,
   },
   {
     title: "价格管理",

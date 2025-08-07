@@ -241,6 +241,7 @@ public static class Program
         services.AddSingleton<PricingService>(); // 价格服务使用单例，因为价格配置相对稳定
         services.AddScoped<ModelPricingInitService>(); // 模型定价初始化服务
         services.AddScoped<IApiKeyGroupService, ApiKeyGroupService>(); // API Key分组服务
+        services.AddScoped<IApiKeyAccountPermissionService, ApiKeyAccountPermissionService>(); // API Key账号池权限服务
 
         services.AddScoped<MessageService>();
 
@@ -308,6 +309,7 @@ public static class Program
         app.MapPricingEndpoints();
         app.MapVersionEndpoints();
         app.MapApiKeyGroupEndpoints();
+        app.MapApiKeyAccountPermissionEndpoints();
 
         // 健康检查端点
         app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }))

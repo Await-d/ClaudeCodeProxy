@@ -1,0 +1,223 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,vb}]
+indent_style = space
+indent_size = 4
+
+[*.{js,ts,tsx,jsx,json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+# C# 代码风格规则
+[*.cs]
+# 新行偏好设置
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# 缩进偏好设置
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = flush_left
+
+# 空格偏好设置
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_parentheses = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_between_method_declaration_empty_parameter_list_parentheses = false
+csharp_space_between_method_call_name_and_opening_parenthesis = false
+csharp_space_between_method_call_empty_parameter_list_parentheses = false
+
+# 换行偏好设置
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = true
+
+# 命名规则
+dotnet_naming_rule.async_methods_end_with_async.severity = error
+dotnet_naming_rule.async_methods_end_with_async.symbols = async_methods
+dotnet_naming_rule.async_methods_end_with_async.style = end_with_async
+
+dotnet_naming_symbols.async_methods.applicable_kinds = method
+dotnet_naming_symbols.async_methods.applicable_accessibilities = *
+dotnet_naming_symbols.async_methods.required_modifiers = async
+
+dotnet_naming_style.end_with_async.required_suffix = Async
+dotnet_naming_style.end_with_async.capitalization = pascal_case
+
+# 接口命名规则
+dotnet_naming_rule.interface_should_be_prefixed_with_i.severity = error
+dotnet_naming_rule.interface_should_be_prefixed_with_i.symbols = interface
+dotnet_naming_rule.interface_should_be_prefixed_with_i.style = prefix_interface_with_i
+
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+
+dotnet_naming_style.prefix_interface_with_i.required_prefix = I
+dotnet_naming_style.prefix_interface_with_i.capitalization = pascal_case
+
+# 常量命名规则
+dotnet_naming_rule.constants_should_be_pascal_case.severity = error
+dotnet_naming_rule.constants_should_be_pascal_case.symbols = constants
+dotnet_naming_rule.constants_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+# 私有字段命名规则
+dotnet_naming_rule.private_fields_should_be_prefixed_with_underscore.severity = suggestion
+dotnet_naming_rule.private_fields_should_be_prefixed_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_prefixed_with_underscore.style = prefix_with_underscore
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.prefix_with_underscore.required_prefix = _
+dotnet_naming_style.prefix_with_underscore.capitalization = camel_case
+
+# 代码分析规则
+dotnet_analyzer_diagnostic.CA1001.severity = error  # Types that own disposable fields should be disposable
+dotnet_analyzer_diagnostic.CA1009.severity = error  # Declare event handlers correctly
+dotnet_analyzer_diagnostic.CA1016.severity = error  # Mark assemblies with assembly version
+dotnet_analyzer_diagnostic.CA1033.severity = error  # Interface methods should be callable by child types
+dotnet_analyzer_diagnostic.CA1049.severity = error  # Types that own native resources should be disposable
+dotnet_analyzer_diagnostic.CA1060.severity = error  # Move pinvokes to native methods class
+dotnet_analyzer_diagnostic.CA1061.severity = error  # Do not hide base class methods
+dotnet_analyzer_diagnostic.CA1063.severity = error  # Implement IDisposable Correctly
+dotnet_analyzer_diagnostic.CA1065.severity = error  # Do not raise exceptions in unexpected locations
+dotnet_analyzer_diagnostic.CA1301.severity = error  # Avoid duplicate accelerators
+dotnet_analyzer_diagnostic.CA1400.severity = error  # P/Invoke entry points should exist
+dotnet_analyzer_diagnostic.CA1401.severity = error  # P/Invokes should not be visible
+dotnet_analyzer_diagnostic.CA1403.severity = error  # Auto layout types should not be COM visible
+dotnet_analyzer_diagnostic.CA1404.severity = error  # Call GetLastError immediately after P/Invoke
+dotnet_analyzer_diagnostic.CA1405.severity = error  # COM visible type base types should be COM visible
+dotnet_analyzer_diagnostic.CA1410.severity = error  # COM registration methods should be matched
+dotnet_analyzer_diagnostic.CA1415.severity = error  # Declare P/Invokes correctly
+dotnet_analyzer_diagnostic.CA1821.severity = error  # Remove empty Finalizers
+dotnet_analyzer_diagnostic.CA1900.severity = error  # Value type fields should be portable
+dotnet_analyzer_diagnostic.CA1901.severity = error  # P/Invoke declarations should be portable
+dotnet_analyzer_diagnostic.CA2002.severity = error  # Do not lock on objects with weak identity
+dotnet_analyzer_diagnostic.CA2100.severity = error  # Review SQL queries for security vulnerabilities
+dotnet_analyzer_diagnostic.CA2101.severity = error  # Specify marshaling for P/Invoke string arguments
+dotnet_analyzer_diagnostic.CA2108.severity = error  # Review declarative security on value types
+dotnet_analyzer_diagnostic.CA2111.severity = error  # Pointers should not be visible
+dotnet_analyzer_diagnostic.CA2112.severity = error  # Secured types should not expose fields
+dotnet_analyzer_diagnostic.CA2114.severity = error  # Method security should be a superset of type
+dotnet_analyzer_diagnostic.CA2116.severity = error  # APTCA methods should only call APTCA methods
+dotnet_analyzer_diagnostic.CA2117.severity = error  # APTCA types should only extend APTCA base types
+dotnet_analyzer_diagnostic.CA2122.severity = error  # Do not indirectly expose methods with link demands
+dotnet_analyzer_diagnostic.CA2123.severity = error  # Override link demands should be identical to base
+dotnet_analyzer_diagnostic.CA2124.severity = error  # Wrap vulnerable finally clauses in outer try
+dotnet_analyzer_diagnostic.CA2126.severity = error  # Type link demands require inheritance demands
+dotnet_analyzer_diagnostic.CA2131.severity = error  # Security critical types may not participate in type equivalence
+dotnet_analyzer_diagnostic.CA2132.severity = error  # Default constructors must be at least as critical as base type default constructors
+dotnet_analyzer_diagnostic.CA2133.severity = error  # Delegates must bind to methods with consistent transparency
+dotnet_analyzer_diagnostic.CA2134.severity = error  # Methods must keep consistent transparency when overriding base methods
+dotnet_analyzer_diagnostic.CA2137.severity = error  # Transparent methods must contain only verifiable IL
+dotnet_analyzer_diagnostic.CA2138.severity = error  # Transparent methods must not call methods with the SuppressUnmanagedCodeSecurity attribute
+dotnet_analyzer_diagnostic.CA2140.severity = error  # Transparent code must not reference security critical items
+dotnet_analyzer_diagnostic.CA2141.severity = error  # Transparent methods must not satisfy LinkDemands
+dotnet_analyzer_diagnostic.CA2146.severity = error  # Types must be at least as critical as their base types and interfaces
+dotnet_analyzer_diagnostic.CA2147.severity = error  # Transparent methods may not use security asserts
+dotnet_analyzer_diagnostic.CA2149.severity = error  # Transparent methods must not call into native code
+dotnet_analyzer_diagnostic.CA2200.severity = error  # Rethrow to preserve stack details
+dotnet_analyzer_diagnostic.CA2202.severity = error  # Do not dispose objects multiple times
+dotnet_analyzer_diagnostic.CA2207.severity = error  # Initialize value type static fields inline
+dotnet_analyzer_diagnostic.CA2212.severity = error  # Do not mark serviced components with WebMethod
+dotnet_analyzer_diagnostic.CA2213.severity = error  # Disposable fields should be disposed
+dotnet_analyzer_diagnostic.CA2214.severity = error  # Do not call overridable methods in constructors
+dotnet_analyzer_diagnostic.CA2216.severity = error  # Disposable types should declare finalizer
+dotnet_analyzer_diagnostic.CA2220.severity = error  # Finalizers should call base class finalizer
+dotnet_analyzer_diagnostic.CA2229.severity = error  # Implement serialization constructors
+dotnet_analyzer_diagnostic.CA2231.severity = error  # Overload operator equals on overriding value type Equals
+dotnet_analyzer_diagnostic.CA2232.severity = error  # Mark Windows Forms entry points with STAThread
+dotnet_analyzer_diagnostic.CA2235.severity = error  # Mark all non-serializable fields
+dotnet_analyzer_diagnostic.CA2236.severity = error  # Call base class methods on ISerializable types
+dotnet_analyzer_diagnostic.CA2237.severity = error  # Mark ISerializable types with serializable
+dotnet_analyzer_diagnostic.CA2238.severity = error  # Implement serialization methods correctly
+dotnet_analyzer_diagnostic.CA2240.severity = error  # Implement ISerializable correctly
+dotnet_analyzer_diagnostic.CA2241.severity = error  # Provide correct arguments to formatting methods
+dotnet_analyzer_diagnostic.CA2242.severity = error  # Test for NaN correctly
+
+# 安全相关规则
+dotnet_analyzer_diagnostic.CA3001.severity = error  # Review code for SQL injection vulnerabilities
+dotnet_analyzer_diagnostic.CA3002.severity = error  # Review code for XSS vulnerabilities
+dotnet_analyzer_diagnostic.CA3003.severity = error  # Review code for file path injection vulnerabilities
+dotnet_analyzer_diagnostic.CA3004.severity = error  # Review code for information disclosure vulnerabilities
+dotnet_analyzer_diagnostic.CA3005.severity = error  # Review code for LDAP injection vulnerabilities
+dotnet_analyzer_diagnostic.CA3006.severity = error  # Review code for process command injection vulnerabilities
+dotnet_analyzer_diagnostic.CA3007.severity = error  # Review code for open redirect vulnerabilities
+dotnet_analyzer_diagnostic.CA3008.severity = error  # Review code for XPath injection vulnerabilities
+dotnet_analyzer_diagnostic.CA3009.severity = error  # Review code for XML injection vulnerabilities
+dotnet_analyzer_diagnostic.CA3010.severity = error  # Review code for XAML injection vulnerabilities
+dotnet_analyzer_diagnostic.CA3011.severity = error  # Review code for DLL injection vulnerabilities
+dotnet_analyzer_diagnostic.CA3012.severity = error  # Review code for regex injection vulnerabilities
+
+dotnet_analyzer_diagnostic.CA5350.severity = error  # Do Not Use Weak Cryptographic Algorithms
+dotnet_analyzer_diagnostic.CA5351.severity = error  # Do Not Use Broken Cryptographic Algorithms
+dotnet_analyzer_diagnostic.CA5358.severity = error  # Review cipher mode usage with cryptography experts
+dotnet_analyzer_diagnostic.CA5359.severity = error  # Do Not Disable Certificate Validation
+dotnet_analyzer_diagnostic.CA5360.severity = error  # Do Not Call Dangerous Methods In Deserialization
+dotnet_analyzer_diagnostic.CA5361.severity = error  # Do Not Disable SChannel Use of Strong Crypto
+dotnet_analyzer_diagnostic.CA5362.severity = error  # Potential reference cycle in deserialized object graph
+dotnet_analyzer_diagnostic.CA5363.severity = error  # Do Not Disable Request Validation
+dotnet_analyzer_diagnostic.CA5364.severity = error  # Do Not Use Deprecated Security Protocols
+dotnet_analyzer_diagnostic.CA5365.severity = error  # Do Not Disable HTTP Header Checking
+dotnet_analyzer_diagnostic.CA5366.severity = error  # Use XmlReader for 'DataSet.ReadXml()'
+dotnet_analyzer_diagnostic.CA5367.severity = error  # Do Not Serialize Types With Pointer Fields
+dotnet_analyzer_diagnostic.CA5368.severity = error  # Set ViewStateUserKey For Classes Derived From Page
+dotnet_analyzer_diagnostic.CA5369.severity = error  # Use XmlReader for 'XmlSerializer.Deserialize()'
+dotnet_analyzer_diagnostic.CA5370.severity = error  # Use XmlReader for XmlValidatingReader constructor
+dotnet_analyzer_diagnostic.CA5371.severity = error  # Use XmlReader for 'XmlSchema.Read()'
+dotnet_analyzer_diagnostic.CA5372.severity = error  # Use XmlReader for XPathDocument constructor
+dotnet_analyzer_diagnostic.CA5373.severity = error  # Do not use obsolete key derivation function
+dotnet_analyzer_diagnostic.CA5374.severity = error  # Do Not Use XslTransform
+dotnet_analyzer_diagnostic.CA5375.severity = error  # Do Not Use Account Shared Access Signature
+dotnet_analyzer_diagnostic.CA5376.severity = error  # Use SharedAccessProtocol HttpsOnly
+dotnet_analyzer_diagnostic.CA5377.severity = error  # Use Container Level Access Policy
+dotnet_analyzer_diagnostic.CA5378.severity = error  # Do not disable ServicePointManagerSecurityProtocols
+dotnet_analyzer_diagnostic.CA5379.severity = error  # Ensure Key Derivation Function algorithm is sufficiently strong
+dotnet_analyzer_diagnostic.CA5380.severity = error  # Do Not Add Certificates To Root Store
+dotnet_analyzer_diagnostic.CA5381.severity = error  # Ensure Certificates Are Not Added To Root Store
+dotnet_analyzer_diagnostic.CA5382.severity = error  # Use Secure Cookies In ASP.Net Core
+dotnet_analyzer_diagnostic.CA5383.severity = error  # Ensure Use Secure Cookies In ASP.Net Core
+dotnet_analyzer_diagnostic.CA5384.severity = error  # Do Not Use Digital Signature Algorithm (DSA)
+dotnet_analyzer_diagnostic.CA5385.severity = error  # Use Rivest-Shamir-Adleman (RSA) Algorithm With Sufficient Key Size
+dotnet_analyzer_diagnostic.CA5386.severity = error  # Avoid hardcoding SecurityProtocolType value
+dotnet_analyzer_diagnostic.CA5387.severity = error  # Do Not Use Weak Key Derivation Function With Insufficient Iteration Count
+dotnet_analyzer_diagnostic.CA5388.severity = error  # Ensure Sufficient Iteration Count When Using Weak Key Derivation Function
+dotnet_analyzer_diagnostic.CA5389.severity = error  # Do Not Add Archive Item's Path To The Target File System Path
+dotnet_analyzer_diagnostic.CA5390.severity = error  # Do not hard-code encryption key
+dotnet_analyzer_diagnostic.CA5391.severity = error  # Use antiforgery tokens in ASP.NET Core MVC controllers
+dotnet_analyzer_diagnostic.CA5392.severity = error  # Use DefaultDllImportSearchPaths attribute for P/Invokes
+dotnet_analyzer_diagnostic.CA5393.severity = error  # Do not use unsafe DllImportSearchPath value
+dotnet_analyzer_diagnostic.CA5394.severity = error  # Do not use insecure randomness
+dotnet_analyzer_diagnostic.CA5395.severity = error  # Miss HttpVerb attribute for action methods
+dotnet_analyzer_diagnostic.CA5396.severity = error  # Set HttpOnly to true for HttpCookies
+dotnet_analyzer_diagnostic.CA5397.severity = error  # Do not use deprecated SslProtocols values
+dotnet_analyzer_diagnostic.CA5398.severity = error  # Avoid hardcoded SslProtocols values
+dotnet_analyzer_diagnostic.CA5399.severity = error  # HttpClients should enable certificate revocation list checks
+dotnet_analyzer_diagnostic.CA5400.severity = error  # Ensure HttpClient certificate revocation list check is not disabled
+dotnet_analyzer_diagnostic.CA5401.severity = error  # Do not use CreateEncryptor with non-default IV
+dotnet_analyzer_diagnostic.CA5402.severity = error  # Use CreateEncryptor with the default IV
+dotnet_analyzer_diagnostic.CA5403.severity = error  # Do not hard-code certificate

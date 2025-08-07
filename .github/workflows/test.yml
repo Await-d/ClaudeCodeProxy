@@ -1,0 +1,367 @@
+name: Test Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  NODE_VERSION: '20.x'
+
+jobs:
+  # 后端单元测试
+  test-backend-unit:
+    runs-on: ubuntu-latest
+    name: Backend Unit Tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
+    - name: Restore dependencies
+      run: dotnet restore ClaudeCodeProxy/ClaudeCodeProxy.sln
+    
+    - name: Build solution
+      run: dotnet build ClaudeCodeProxy/ClaudeCodeProxy.sln --no-restore --configuration Release
+    
+    - name: Run unit tests
+      run: |
+        dotnet test ClaudeCodeProxy/tests/ClaudeCodeProxy.UnitTests \
+          --no-build \
+          --configuration Release \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./test-results/unit \
+          --logger "trx;LogFileName=unit-test-results.trx" \
+          --logger "console;verbosity=detailed"
+    
+    - name: Upload unit test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-unit-test-results
+        path: ./test-results/unit/
+        retention-days: 30
+
+  # 后端集成测试
+  test-backend-integration:
+    runs-on: ubuntu-latest
+    name: Backend Integration Tests
+    needs: test-backend-unit
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
+    - name: Restore dependencies
+      run: dotnet restore ClaudeCodeProxy/ClaudeCodeProxy.sln
+    
+    - name: Build solution
+      run: dotnet build ClaudeCodeProxy/ClaudeCodeProxy.sln --no-restore --configuration Release
+    
+    - name: Run integration tests
+      run: |
+        dotnet test ClaudeCodeProxy/tests/ClaudeCodeProxy.IntegrationTests \
+          --no-build \
+          --configuration Release \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./test-results/integration \
+          --logger "trx;LogFileName=integration-test-results.trx" \
+          --logger "console;verbosity=detailed"
+    
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-integration-test-results
+        path: ./test-results/integration/
+        retention-days: 30
+
+  # 前端测试
+  test-frontend:
+    runs-on: ubuntu-latest
+    name: Frontend Tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ClaudeCodeProxy/web/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ClaudeCodeProxy/web
+      run: npm ci
+    
+    - name: Run linter
+      working-directory: ClaudeCodeProxy/web
+      run: npm run lint
+    
+    - name: Run type checking
+      working-directory: ClaudeCodeProxy/web
+      run: npx tsc --noEmit
+    
+    - name: Run unit tests
+      working-directory: ClaudeCodeProxy/web
+      run: npm run test:coverage
+    
+    - name: Upload frontend test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: frontend-test-results
+        path: ClaudeCodeProxy/web/coverage/
+        retention-days: 30
+
+  # 代码覆盖率报告
+  coverage-report:
+    runs-on: ubuntu-latest
+    name: Generate Coverage Report
+    needs: [test-backend-unit, test-backend-integration, test-frontend]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all test artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Setup .NET for ReportGenerator
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+    
+    - name: Generate backend coverage report
+      run: |
+        reportgenerator \
+          -reports:"backend-*/coverage.cobertura.xml" \
+          -targetdir:"coverage-report/backend" \
+          -reporttypes:"Html;JsonSummary;Badges;TextSummary" \
+          -title:"ClaudeCodeProxy Backend Coverage"
+    
+    - name: Merge all coverage reports
+      run: |
+        mkdir -p coverage-report/combined
+        
+        # 生成合并报告
+        reportgenerator \
+          -reports:"backend-*/coverage.cobertura.xml;frontend-test-results/lcov.info" \
+          -targetdir:"coverage-report/combined" \
+          -reporttypes:"Html;JsonSummary;Badges;TextSummary" \
+          -title:"ClaudeCodeProxy Full Coverage Report"
+    
+    - name: Extract coverage percentage
+      id: coverage
+      run: |
+        if [ -f "coverage-report/combined/Summary.json" ]; then
+          COVERAGE=$(cat coverage-report/combined/Summary.json | jq -r '.summary.linecoverage')
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Coverage: $COVERAGE%"
+        else
+          echo "coverage=0" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Comment coverage on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const coverage = '${{ steps.coverage.outputs.coverage }}';
+          const body = `## 📊 测试覆盖率报告
+          
+          **总覆盖率**: ${coverage}%
+          
+          ${coverage >= 80 ? '✅' : '❌'} 覆盖率目标: 80%
+          
+          详细报告请查看 [Coverage Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
+    
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage-report/
+        retention-days: 30
+    
+    - name: Upload to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: backend-*/coverage.cobertura.xml,frontend-test-results/lcov.info
+        fail_ci_if_error: false
+        verbose: true
+
+  # 安全扫描
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore ClaudeCodeProxy/ClaudeCodeProxy.sln
+    
+    - name: Run .NET security scan
+      run: dotnet list ClaudeCodeProxy/ClaudeCodeProxy.sln package --vulnerable --include-transitive 2>&1 | tee security-scan.txt
+    
+    - name: Setup Node.js for npm audit
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Run npm security audit
+      working-directory: ClaudeCodeProxy/web
+      run: |
+        npm audit --audit-level=moderate --json > npm-audit.json || true
+        npm audit --audit-level=moderate || true
+    
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: |
+          security-scan.txt
+          ClaudeCodeProxy/web/npm-audit.json
+        retention-days: 30
+
+  # 质量门禁
+  quality-gate:
+    runs-on: ubuntu-latest
+    name: Quality Gate
+    needs: [test-backend-unit, test-backend-integration, test-frontend, coverage-report, security-scan]
+    if: always()
+    
+    steps:
+    - name: Download coverage report
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-report
+    
+    - name: Check coverage threshold
+      run: |
+        if [ -f "combined/Summary.json" ]; then
+          COVERAGE=$(cat combined/Summary.json | jq -r '.summary.linecoverage' | cut -d'%' -f1)
+          echo "Current coverage: $COVERAGE%"
+          
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "❌ Coverage $COVERAGE% is below threshold 80%"
+            exit 1
+          else
+            echo "✅ Coverage $COVERAGE% meets threshold"
+          fi
+        else
+          echo "❌ Coverage report not found"
+          exit 1
+        fi
+    
+    - name: Check test results
+      run: |
+        # 检查是否有测试失败
+        if [ "${{ needs.test-backend-unit.result }}" != "success" ]; then
+          echo "❌ Backend unit tests failed"
+          exit 1
+        fi
+        
+        if [ "${{ needs.test-backend-integration.result }}" != "success" ]; then
+          echo "❌ Backend integration tests failed"
+          exit 1
+        fi
+        
+        if [ "${{ needs.test-frontend.result }}" != "success" ]; then
+          echo "❌ Frontend tests failed"
+          exit 1
+        fi
+        
+        echo "✅ All tests passed"
+    
+    - name: Quality gate summary
+      run: |
+        echo "## 🎯 质量门禁检查结果" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ 后端单元测试: ${{ needs.test-backend-unit.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ 后端集成测试: ${{ needs.test-backend-integration.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ 前端测试: ${{ needs.test-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ 代码覆盖率: >= 80%" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ 安全扫描: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🎉 所有质量检查通过，代码可以部署！" >> $GITHUB_STEP_SUMMARY
+
+  # 性能基准测试（仅在main分支运行）
+  performance-benchmark:
+    runs-on: ubuntu-latest
+    name: Performance Benchmark
+    if: github.ref == 'refs/heads/main'
+    needs: quality-gate
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Run performance benchmarks
+      run: |
+        if [ -d "ClaudeCodeProxy/tests/ClaudeCodeProxy.PerformanceTests" ]; then
+          dotnet run --project ClaudeCodeProxy/tests/ClaudeCodeProxy.PerformanceTests --configuration Release
+        else
+          echo "Performance tests not found, skipping..."
+        fi
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-benchmark-results
+        path: BenchmarkDotNet.Artifacts/
+        retention-days: 30
