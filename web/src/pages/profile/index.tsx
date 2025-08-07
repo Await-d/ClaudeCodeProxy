@@ -45,8 +45,8 @@ const ProfilePage: React.FC = () => {
   // 兑换码相关状态
   const [redeemCode, setRedeemCode] = useState('')
   const [redeemLoading, setRedeemLoading] = useState(false)
-  const [redeemRecords, setRedeemRecords] = useState<RedeemRecord[]>([])
-  const [recordsLoading, setRecordsLoading] = useState(false)
+  const [redeemRecords] = useState<RedeemRecord[]>([])
+  const [recordsLoading] = useState(false)
   const [showRedeemDialog, setShowRedeemDialog] = useState(false)
   const [showRecordsDialog, setShowRecordsDialog] = useState(false)
 

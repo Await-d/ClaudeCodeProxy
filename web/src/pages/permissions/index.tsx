@@ -48,7 +48,7 @@ const PermissionManagement: React.FC = () => {
   // State管理
   const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'pools' | 'config'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilters, setSelectedFilters] = useState<{
+  const [selectedFilters] = useState<{
     platform?: string;
     status?: string;
     poolGroup?: string;
@@ -64,7 +64,6 @@ const PermissionManagement: React.FC = () => {
   
   // 模态框状态
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const [showBatchOperationModal, setShowBatchOperationModal] = useState(false);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([]);
   const [editingPermission, setEditingPermission] = useState<ApiKeyAccountPermission | null>(null);
 
@@ -151,7 +150,7 @@ const PermissionManagement: React.FC = () => {
     }
   }, [showToast]);
 
-  const handleBatchOperation = useCallback(async (operation: string, payload?: any) => {
+  const handleBatchOperation = useCallback(async (operation: string) => {
     if (selectedPermissionIds.length === 0) {
       showToast('请先选择要操作的权限规则', 'warning');
       return;
@@ -387,7 +386,10 @@ const PermissionManagement: React.FC = () => {
                 <p className="text-muted-foreground mb-4">
                   选择一个或多个API Key来批量设置权限规则
                 </p>
-                <Button onClick={() => setShowBatchOperationModal(true)}>
+                <Button onClick={() => {
+                  // TODO: 实现批量配置功能
+                  showToast('批量配置功能开发中', 'info');
+                }}>
                   开始批量配置
                 </Button>
               </div>
