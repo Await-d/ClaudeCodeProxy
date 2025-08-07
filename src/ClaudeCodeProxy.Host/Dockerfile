@@ -1,5 +1,9 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+<<<<<<< HEAD
 USER $APP_UID
+=======
+USER root
+>>>>>>> upstream/main
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo "Asia/Shanghai" > /etc/timezone
 WORKDIR /app
@@ -26,6 +30,5 @@ FROM base AS final
 WORKDIR /app
 # Create data directory for SQLite database
 COPY --from=publish /app/publish .
-# Copy pre-built frontend files from web/dist directory
 COPY web/dist ./wwwroot
 ENTRYPOINT ["dotnet", "ClaudeCodeProxy.Host.dll"]

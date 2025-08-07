@@ -13,6 +13,7 @@ public class ApiKeyService(IContext context)
     public async Task<ApiKey?> GetApiKeyAsync(string key, CancellationToken cancellationToken = default)
     {
         var apiKey = await context.ApiKeys
+            .Include(x => x.User)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.KeyValue == key, cancellationToken);
 
@@ -20,7 +21,7 @@ public class ApiKeyService(IContext context)
         {
             await context.ApiKeys
                 .Where(x => x.Id == apiKey.Id)
-                .ExecuteUpdateAsync(x => x.SetProperty(y => y.LastUsedAt, DateTime.UtcNow), cancellationToken);
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.LastUsedAt, DateTime.Now), cancellationToken);
         }
 
         return apiKey;
@@ -32,6 +33,20 @@ public class ApiKeyService(IContext context)
     public async Task<List<ApiKey>> GetAllApiKeysAsync(CancellationToken cancellationToken = default)
     {
         return await context.ApiKeys
+            .Include(x => x.User)
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// 获取指定用户的API Keys
+    /// </summary>
+    public async Task<List<ApiKey>> GetUserApiKeysAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await context.ApiKeys
+            .Include(x => x.User)
+            .Where(x => x.UserId == userId)
             .AsNoTracking()
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -43,6 +58,7 @@ public class ApiKeyService(IContext context)
     public async Task<ApiKey?> GetApiKeyByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.ApiKeys
+            .Include(x => x.User)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
@@ -50,7 +66,7 @@ public class ApiKeyService(IContext context)
     /// <summary>
     /// 创建新的API Key
     /// </summary>
-    public async Task<ApiKey> CreateApiKeyAsync(CreateApiKeyRequest request,
+    public async Task<ApiKey> CreateApiKeyAsync(CreateApiKeyRequest request, Guid userId,
         CancellationToken cancellationToken = default)
     {
         var keyValue = GenerateApiKey();
@@ -58,6 +74,7 @@ public class ApiKeyService(IContext context)
         var apiKey = new ApiKey
         {
             Id = Guid.NewGuid(),
+            UserId = request.UserId ?? userId, // 使用请求中的UserId或当前用户ID
             Name = request.Name,
             KeyValue = keyValue,
             Description = request.Description,
@@ -81,7 +98,7 @@ public class ApiKeyService(IContext context)
             IsEnabled = request.IsEnabled,
             Model = request.Model,
             Service = request.Service,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         context.ApiKeys.Add(apiKey);
@@ -165,7 +182,7 @@ public class ApiKeyService(IContext context)
         if (!string.IsNullOrEmpty(request.Service))
             apiKey.Service = request.Service;
 
-        apiKey.ModifiedAt = DateTime.UtcNow;
+        apiKey.ModifiedAt = DateTime.Now;
         apiKey.Model = request.Model;
 
         await context.SaveAsync(cancellationToken);
@@ -195,7 +212,7 @@ public class ApiKeyService(IContext context)
     {
         await context.ApiKeys.Where(x => x.Id == id)
             .ExecuteUpdateAsync(x => x.SetProperty(a => a.IsEnabled, true)
-                .SetProperty(a => a.ModifiedAt, DateTime.UtcNow), cancellationToken);
+                .SetProperty(a => a.ModifiedAt, DateTime.Now), cancellationToken);
 
         // 检查是否有记录被更新
         var apiKey = await context.ApiKeys.AsNoTracking()
@@ -211,7 +228,7 @@ public class ApiKeyService(IContext context)
     {
         await context.ApiKeys.Where(x => x.Id == id)
             .ExecuteUpdateAsync(x => x.SetProperty(a => a.IsEnabled, false)
-                .SetProperty(a => a.ModifiedAt, DateTime.UtcNow), cancellationToken);
+                .SetProperty(a => a.ModifiedAt, DateTime.Now), cancellationToken);
 
         // 检查是否有记录被更新
         var apiKey = await context.ApiKeys.AsNoTracking()
@@ -232,7 +249,7 @@ public class ApiKeyService(IContext context)
         }
 
         apiKey.IsEnabled = !apiKey.IsEnabled;
-        apiKey.ModifiedAt = DateTime.UtcNow;
+        apiKey.ModifiedAt = DateTime.Now;
 
         await context.SaveAsync(cancellationToken);
         return true;
@@ -248,7 +265,7 @@ public class ApiKeyService(IContext context)
         if (apiKey == null || !apiKey.IsEnabled)
             return false;
 
-        if (apiKey.ExpiresAt.HasValue && apiKey.ExpiresAt.Value < DateTime.UtcNow)
+        if (apiKey.ExpiresAt.HasValue && apiKey.ExpiresAt.Value < DateTime.Now)
             return false;
 
         return true;
@@ -260,6 +277,7 @@ public class ApiKeyService(IContext context)
     public async Task<ApiKey?> GetApiKeyWithRefreshedUsageAsync(string key, CancellationToken cancellationToken = default)
     {
         var apiKey = await context.ApiKeys
+            .Include(x => x.User)
             .FirstOrDefaultAsync(x => x.KeyValue == key, cancellationToken);
 
         if (apiKey == null)
@@ -271,7 +289,7 @@ public class ApiKeyService(IContext context)
         // 更新最后使用时间
         await context.ApiKeys
             .Where(x => x.Id == apiKey.Id)
-            .ExecuteUpdateAsync(x => x.SetProperty(y => y.LastUsedAt, DateTime.UtcNow), cancellationToken);
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.LastUsedAt, DateTime.Now), cancellationToken);
 
         return apiKey;
     }
@@ -281,7 +299,7 @@ public class ApiKeyService(IContext context)
     /// </summary>
     private async Task RefreshApiKeyUsageAsync(ApiKey apiKey, CancellationToken cancellationToken = default)
     {
-        var now = DateTime.UtcNow;
+        var now = DateTime.Now;
         var today = now.Date;
         var currentMonth = new DateTime(now.Year, now.Month, 1);
         
